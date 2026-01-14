@@ -22,6 +22,8 @@ module.exports = {
       { multipleReportsUnitePath: './reports', pageTitle: 'integration', publicPath: './reports', filename: 'integration.html' },
     ],
   ],
+  globalSetup: '<rootDir>/tests/integration/globalSetup.ts',
+  globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',
   moduleDirectories: ['node_modules', 'src'],
   testEnvironment: 'node',
   coverageThreshold: {

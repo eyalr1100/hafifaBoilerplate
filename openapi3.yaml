@@ -1,106 +1,375 @@
-openapi: 3.0.1
+openapi: 3.0.3
 info:
-  title: service-name
-  description: basic template for map colonies service
+  title: Dataset Search API
   version: 1.0.0
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
-paths:
-  /anotherResource:
-    get:
-      operationId: getAnotherResource
-      tags:
-        - anotherResource
-      summary: gets the resource
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/anotherResource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-  /resourceName:
-    get:
-      operationId: getResourceName
-      tags:
-        - resourceName
-      summary: gets the resource
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/resource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-    post:
-      operationId: createResource
-      tags:
-        - resourceName
-      summary: creates a new record of type resource
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/resource'
-      responses:
-        201:
-          description: created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/resource'
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/error'
-security:
-  - {}
+
 components:
   schemas:
-    error:
+    uuid:
+      type: string
+      format: uuid
+      description: UUID v4 identifier
+      example: 3eced354-acca-4fc6-bfce-8ffa4d1e86da
+
+    productType:
+      type: string
+      enum:
+        - raster
+        - rasterized vector
+        - 3d tiles
+        - QMesh
+
+    protocol:
+      type: string
+      enum:
+        - WMS
+        - WMTS
+        - XYZ
+        - 3D Tiles
+
+    comparableNumber:
       type: object
-      required:
-        - message
       properties:
-        message:
-          type: string
-    resource:
+        greater:
+          type: number
+        greaterEqual:
+          type: number
+        less:
+          type: number
+        lessEqual:
+          type: number
+        equal:
+          type: number
+
+    productCreate:
       type: object
       required:
-        - id
         - name
         - description
+        - type
+        - protocol
+        - consumtionLink
+        - resolutionBest
+        - minZoom
+        - maxZoom
+        - boundingPolygon
       properties:
-        id:
-          type: number
-          format: int64
         name:
           type: string
         description:
           type: string
-    anotherResource:
-      type: object
-      required:
-        - kind
-        - isAlive
-      properties:
-        kind:
+        type:
+          $ref: '#/components/schemas/productType'
+        protocol:
+          $ref: '#/components/schemas/protocol'
+        consumtionLink:
           type: string
-        isAlive:
-          type: boolean
+        resolutionBest:
+          type: number
+        minZoom:
+          type: number
+        maxZoom:
+          type: number
+        boundingPolygon:
+          $ref: '#/components/schemas/Polygon'
+    geoJsonObject:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum:
+            - Feature
+            - FeatureCollection
+            - Point
+            - MultiPoint
+            - LineString
+            - MultiLineString
+            - Polygon
+            - MultiPolygon
+            - GeometryCollection
+        bbox:
+          type: array
+          items:
+            type: number
+      discriminator:
+        propertyName: type
+
+    geometry:
+      allOf:
+        - $ref: '#/components/schemas/geoJsonObject'
+        - type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+                - MultiPoint
+                - LineString
+                - MultiLineString
+                - Polygon
+                - MultiPolygon
+                - GeometryCollection
+
+    geometryElement:
+      allOf:
+        - $ref: '#/components/schemas/geometry'
+        - type: object
+          required: [type]
+          properties:
+            type:
+              type: string
+              enum:
+                - Point
+                - MultiPoint
+                - LineString
+                - MultiLineString
+                - Polygon
+                - MultiPolygon
+
+    Polygon:
+      type: object
+      description: Geojson geometry
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id4
+      allOf:
+        - $ref: '#/components/schemas/geometry'
+        - properties:
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Point3D'
+
+    Point3D:
+      type: array
+      description: Point in 3D space
+      externalDocs:
+        url: http://geojson.org/geojson-spec.html#id2
+      minItems: 2
+      maxItems: 3
+      items:
+        type: number
+
+    position:
+      type: array
+      minItems: 2
+      maxItems: 3
+      items:
+        type: number
+
+    linearRing:
+      type: array
+      minItems: 4
+      items:
+        $ref: '#/components/schemas/position'
+
+    boundingPolygon:
+      type: object
+      properties:
+        contains:
+          $ref: '#/components/schemas/Polygon'
+        within:
+          $ref: '#/components/schemas/Polygon'
+        intersects:
+          $ref: '#/components/schemas/Polygon'
+    productBase:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/productType'
+        protocol:
+          $ref: '#/components/schemas/protocol'
+        consumtionLink:
+          type: string
+        resolutionBest:
+          type: number
+        minZoom:
+          type: number
+        maxZoom:
+          type: number
+        boundingPolygon:
+          $ref: '#/components/schemas/Polygon'
+
+    product:
+      allOf:
+        - $ref: '#/components/schemas/productBase'
+        - type: object
+          required: [id]
+          properties:
+            id:
+              $ref: '#/components/schemas/uuid'
+
+    searchParameter:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/uuid'
+        name:
+          type: string
+        description:
+          type: string
+        consumtionLink:
+          type: string
+        type:
+          $ref: '#/components/schemas/productType'
+        protocol:
+          $ref: '#/components/schemas/protocol'
+        resolutionBest:
+          $ref: '#/components/schemas/comparableNumber'
+        minZoom:
+          $ref: '#/components/schemas/comparableNumber'
+        maxZoom:
+          $ref: '#/components/schemas/comparableNumber'
+        boundingPolygon:
+          $ref: '#/components/schemas/boundingPolygon'
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                example: Request validation failed
+              details:
+                type: array
+                items:
+                  type: string
+                example:
+                  - 'resolutionBest must be a number'
+                  - 'type must be one of: raster, rasterized vector, 3d tiles, QMesh'
+    CreatedProduct:
+      description: Product created successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - id
+            properties:
+              id:
+                $ref: '#/components/schemas/uuid'
+
+    NoContent:
+      description: Operation completed successfully
+
+    ProductNotFound:
+      description: Product not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                example: Product not found
+
+    DeletedProduct:
+      description: Product deleted successfully
+
+    SearchProductsOK:
+      description: Products matching search criteria
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/product'
+
+    ServiceUnavailable:
+      description: Database service unavailable
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                example: DB not connected
+
+paths:
+  /products:
+    post:
+      summary: Creates a new product
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/productCreate'
+      responses:
+        '201':
+          $ref: '#/components/responses/CreatedProduct'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /products/search:
+    post:
+      summary: Searches for products
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/searchParameter'
+      responses:
+        '200':
+          $ref: '#/components/responses/SearchProductsOK'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /products/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        description: Product ID
+        schema:
+          $ref: '#/components/schemas/uuid'
+
+    put:
+      summary: Partially updates a product by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/productBase'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+    delete:
+      summary: Deletes a product by ID
+      responses:
+        '204':
+          $ref: '#/components/responses/DeletedProduct'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'

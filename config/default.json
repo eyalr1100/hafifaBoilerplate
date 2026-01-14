@@ -1,4 +1,24 @@
 {
+  "configManagement": {
+    "offlineMode": true,
+    "name": "service-name",
+    "version": "1.0.0",
+    "serverUrl": ""
+  },
+  "db": {
+    "type": "postgres",
+    "host": "localhost",
+    "port": 5432,
+    "username": "postgres",
+    "password": "postgres",
+    "database": "postgres",
+    "enableSslAuth": false,
+    "sslPaths": {
+      "ca": "",
+      "cert": "",
+      "key": ""
+    }
+  },
   "openapiConfig": {
     "filePath": "./openapi3.yaml",
     "basePath": "/docs",

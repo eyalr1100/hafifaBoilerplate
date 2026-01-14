@@ -2,13 +2,18 @@ import { getOtelMixin } from '@map-colonies/telemetry';
 import { trace } from '@opentelemetry/api';
 import { Registry } from 'prom-client';
 import { DependencyContainer } from 'tsyringe/dist/typings/types';
-import jsLogger from '@map-colonies/js-logger';
+import jsLogger, { Logger } from '@map-colonies/js-logger';
+import { CleanupRegistry } from '@map-colonies/cleanup-registry';
+import { DataSource, Repository } from 'typeorm';
+import { instancePerContainerCachingFactory } from 'tsyringe';
+import { addTransactionalDataSource, initializeTransactionalContext, StorageDriver } from 'typeorm-transactional';
 import { InjectionObject, registerDependencies } from '@common/dependencyRegistration';
 import { SERVICES, SERVICE_NAME } from '@common/constants';
 import { getTracing } from '@common/tracing';
-import { resourceNameRouterFactory, RESOURCE_NAME_ROUTER_SYMBOL } from './resourceName/routes/resourceNameRouter';
-import { anotherResourceRouterFactory, ANOTHER_RESOURCE_ROUTER_SYMBOL } from './anotherResource/routes/anotherResourceRouter';
-import { getConfig } from './common/config';
+import { productRouterFactory, PRODUCT_ROUTER_SYMBOL } from './product/routes/productRouter';
+import { ConfigType, getConfig } from './common/config';
+import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product/models/product';
+import { DATA_SOURCE_PROVIDER, dataSourceFactory } from './common/db/connection';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -16,29 +21,75 @@ export interface RegisterOptions {
 }
 
 export const registerExternalValues = async (options?: RegisterOptions): Promise<DependencyContainer> => {
+  const cleanupRegistry = new CleanupRegistry();
   const configInstance = getConfig();
-
-  const loggerConfig = configInstance.get('telemetry.logger');
-
-  const logger = jsLogger({ ...loggerConfig, prettyPrint: loggerConfig.prettyPrint, mixin: getOtelMixin() });
 
   const tracer = trace.getTracer(SERVICE_NAME);
   const metricsRegistry = new Registry();
   configInstance.initializeMetrics(metricsRegistry);
 
   const dependencies: InjectionObject<unknown>[] = [
-    { token: SERVICES.CONFIG, provider: { useValue: configInstance } },
-    { token: SERVICES.LOGGER, provider: { useValue: logger } },
+    { token: SERVICES.CONFIG, provider: { useValue: getConfig() } },
+    {
+      token: SERVICES.LOGGER,
+      provider: {
+        useFactory: instancePerContainerCachingFactory((container) => {
+          const config = container.resolve<ConfigType>(SERVICES.CONFIG);
+          const loggerConfig = config.get('telemetry.logger');
+          const logger = jsLogger({ ...loggerConfig, mixin: getOtelMixin() });
+          return logger;
+        }),
+      },
+    },
     { token: SERVICES.TRACER, provider: { useValue: tracer } },
     { token: SERVICES.METRICS, provider: { useValue: metricsRegistry } },
-    { token: RESOURCE_NAME_ROUTER_SYMBOL, provider: { useFactory: resourceNameRouterFactory } },
-    { token: ANOTHER_RESOURCE_ROUTER_SYMBOL, provider: { useFactory: anotherResourceRouterFactory } },
+    { token: PRODUCT_ROUTER_SYMBOL, provider: { useFactory: productRouterFactory } },
     {
       token: 'onSignal',
       provider: {
         useValue: async (): Promise<void> => {
-          await Promise.all([getTracing().stop()]);
+          try {
+            await getTracing().stop();
+          } catch (_) {
+            // Ignore if tracing not initialized
+          }
         },
+      },
+    },
+    {
+      token: PRODUCT_REPOSITORY_SYMBOL,
+      provider: {
+        useFactory(container): Repository<Product> {
+          const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+          return dataSource.getRepository(Product);
+        },
+      },
+    },
+    {
+      token: DATA_SOURCE_PROVIDER,
+      provider: {
+        useFactory: instancePerContainerCachingFactory(dataSourceFactory),
+      },
+      postInjectionHook: async (deps: DependencyContainer): Promise<void> => {
+        const dataSource = deps.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+        if (!dataSource.isInitialized) {
+          await dataSource.initialize();
+          initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
+          addTransactionalDataSource(dataSource);
+          cleanupRegistry.register({ id: DATA_SOURCE_PROVIDER, func: dataSource.destroy.bind(dataSource) });
+        }
+      },
+    },
+    {
+      token: SERVICES.CLEANUP_REGISTRY,
+      provider: { useValue: cleanupRegistry },
+      postInjectionHook(container): void {
+        const logger = container.resolve<Logger>(SERVICES.LOGGER);
+        const cleanupRegistryLogger = logger.child({ subComponent: 'cleanupRegistry' });
+
+        cleanupRegistry.on('itemFailed', (id, error, msg) => cleanupRegistryLogger.error({ msg, itemId: id, err: error }));
+        cleanupRegistry.on('itemCompleted', (id) => cleanupRegistryLogger.info({ itemId: id, msg: 'cleanup finished for item' }));
+        cleanupRegistry.on('finished', (status) => cleanupRegistryLogger.info({ msg: `cleanup registry finished cleanup`, status }));
       },
     },
   ];
