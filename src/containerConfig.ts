@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { instancePerContainerCachingFactory } from 'tsyringe';
 import { addTransactionalDataSource, initializeTransactionalContext, StorageDriver } from 'typeorm-transactional';
 import { InjectionObject, registerDependencies } from '@common/dependencyRegistration';
-import { SERVICES, SERVICE_NAME } from '@common/constants';
+import { ON_SIGNAL, SERVICES, SERVICE_NAME } from '@common/constants';
 import { getTracing } from '@common/tracing';
 import { productRouterFactory, PRODUCT_ROUTER_SYMBOL } from './product/routes/productRouter';
 import { ConfigType, getConfig } from './common/config';
@@ -40,6 +40,21 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
           return logger;
         }),
       },
+      postInjectionHook: (deps: DependencyContainer): void => {
+        const logger = deps.resolve<Logger>(SERVICES.LOGGER);
+        // Register logger cleanup to flush any pending writes
+        cleanupRegistry.register({
+          id: 'logger-cleanup',
+          func: async () => {
+            // Pino logger flush
+            if (typeof logger.flush === 'function') {
+              await new Promise<void>((resolve) => {
+                logger.flush(() => resolve());
+              });
+            }
+          },
+        });
+      },
     },
     { token: SERVICES.TRACER, provider: { useValue: tracer } },
     { token: SERVICES.METRICS, provider: { useValue: metricsRegistry } },
@@ -48,11 +63,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       token: 'onSignal',
       provider: {
         useValue: async (): Promise<void> => {
-          try {
-            await getTracing().stop();
-          } catch (_) {
-            // Ignore if tracing not initialized
-          }
+          await getTracing().stop();
         },
       },
     },
@@ -90,6 +101,12 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
         cleanupRegistry.on('itemFailed', (id, error, msg) => cleanupRegistryLogger.error({ msg, itemId: id, err: error }));
         cleanupRegistry.on('itemCompleted', (id) => cleanupRegistryLogger.info({ itemId: id, msg: 'cleanup finished for item' }));
         cleanupRegistry.on('finished', (status) => cleanupRegistryLogger.info({ msg: `cleanup registry finished cleanup`, status }));
+      },
+    },
+    {
+      token: ON_SIGNAL,
+      provider: {
+        useValue: cleanupRegistry.trigger.bind(cleanupRegistry),
       },
     },
   ];

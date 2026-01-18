@@ -1,6 +1,6 @@
 import { SelectQueryBuilder } from 'typeorm';
 import { Product } from '../models/product';
-import { IComparableNumber, IPolygon } from '../models/interface';
+import { IBoundingPolygon, IComparableNumber } from '../models/interface';
 
 // Simple filter
 export const addSimpleFilter = (qb: SelectQueryBuilder<Product>, field: string, value: string | number): void => {
@@ -32,19 +32,28 @@ export const isComparableNumber = (value: unknown): value is IComparableNumber =
 };
 
 // Spatial filter
-export const addSpatialFilter = (qb: SelectQueryBuilder<Product>, filter: IPolygon): void => {
-  const mapping: Record<keyof IPolygon, string> = {
-    contains: 'ST_Contains',
-    intersects: 'ST_Intersects',
-    within: 'ST_Contains',
-  };
-
+export const addSpatialFilter = (qb: SelectQueryBuilder<Product>, filter: IBoundingPolygon): void => {
   Object.entries(filter).forEach(([key, polygon]) => {
-    const func = mapping[key as keyof IPolygon];
-    const geomA = key === 'contains' ? 'ST_GeomFromGeoJSON(:polygon)' : 'product.boundingPolygon';
-    const geomB = key === 'within' ? 'ST_GeomFromGeoJSON(:polygon)' : 'product.boundingPolygon';
-    qb.andWhere(`${func}(${geomA}, ${geomB})`, {
-      polygon: JSON.stringify(polygon),
-    });
+    const polygonParam = 'ST_GeomFromGeoJSON(:polygon)';
+
+    switch (key as keyof IBoundingPolygon) {
+      case 'intersects':
+        qb.andWhere(`ST_Intersects(product.boundingPolygon, ${polygonParam})`, {
+          polygon: JSON.stringify(polygon),
+        });
+        break;
+
+      case 'contains':
+        qb.andWhere(`ST_Contains(product.boundingPolygon, ${polygonParam})`, {
+          polygon: JSON.stringify(polygon),
+        });
+        break;
+
+      case 'within':
+        qb.andWhere(`ST_Within(product.boundingPolygon, ${polygonParam})`, {
+          polygon: JSON.stringify(polygon),
+        });
+        break;
+    }
   });
 };
