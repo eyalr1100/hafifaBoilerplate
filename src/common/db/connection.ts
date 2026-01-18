@@ -52,3 +52,7 @@ export const dataSourceFactory: FactoryFunction<DataSource> = (container: Depend
   const dataSource = getCachedDataSource(dbConfig);
   return dataSource;
 };
+
+export const resetConnectionSingleton = (): void => {
+  connectionSingleton = undefined;
+};

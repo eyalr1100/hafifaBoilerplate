@@ -8,7 +8,7 @@ export type StringifiedProduct = Partial<Product>;
 
 export const createStringifiedFakeEntity = (params: FakeStringifiedFileParams = {}): StringifiedProduct => {
   return {
-    id: params.id ?? faker.datatype.uuid(),
+    id: params.id ?? faker.string.uuid(),
     name: params.name ?? faker.commerce.productName(),
     description: params.description ?? faker.commerce.productDescription(),
     boundingPolygon:
