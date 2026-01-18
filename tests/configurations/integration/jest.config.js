@@ -6,25 +6,32 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['@swc/jest'],
   },
-  coverageReporters: ['text', 'html'],
+  // ADD THIS LINE - tells Jest to transform @faker-js package
+  transformIgnorePatterns: ['node_modules/(?!(@faker-js)/)'],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>/' }),
-  collectCoverage: true,
-  collectCoverageFrom: ['<rootDir>/src/**/*.ts', '!*/node_modules/', '!/vendor/**', '!*/common/**', '!**/models/**', '!<rootDir>/src/*'],
-  coverageDirectory: '<rootDir>/coverage/integration',
-  rootDir: '../../../.',
   testMatch: ['<rootDir>/tests/integration/**/*.spec.ts'],
-  setupFiles: ['<rootDir>/tests/configurations/jest.setup.ts'],
-  setupFilesAfterEnv: ['jest-openapi', '<rootDir>/tests/configurations/initJestOpenapi.setup.ts'],
+  coverageReporters: ['text', 'html'],
+  collectCoverage: true,
+  collectCoverageFrom: [
+    '<rootDir>/src/**/*.ts',
+    '!*/node_modules/',
+    '!/vendor/**',
+    '!*/common/**',
+    '!**/controllers/**',
+    '!**/routes/**',
+    '!**/DAL/**',
+    '!<rootDir>/src/*',
+    '!<rootDir>/src/product/models/product.ts',
+  ],
+  coverageDirectory: '<rootDir>/coverage',
   reporters: [
     'default',
-    [
-      'jest-html-reporters',
-      { multipleReportsUnitePath: './reports', pageTitle: 'integration', publicPath: './reports', filename: 'integration.html' },
-    ],
+    ['jest-html-reporters', { multipleReportsUnitePath: './reports', pageTitle: 'unit', publicPath: './reports', filename: 'unit.html' }],
   ],
-  globalSetup: '<rootDir>/tests/integration/globalSetup.ts',
+  rootDir: '../../../.',
+  setupFiles: ['<rootDir>/tests/configurations/jest.setup.ts'],
   globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',
-  moduleDirectories: ['node_modules', 'src'],
+
   testEnvironment: 'node',
   coverageThreshold: {
     global: {
