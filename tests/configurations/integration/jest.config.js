@@ -31,7 +31,7 @@ module.exports = {
   rootDir: '../../../.',
   setupFiles: ['<rootDir>/tests/configurations/jest.setup.ts'],
   globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',
-
+  forceExit: true,
   testEnvironment: 'node',
   coverageThreshold: {
     global: {
