@@ -28,7 +28,7 @@ void getApp()
     });
   })
   .catch(async (error: Error) => {
-    // ESLint rules are giving mutually exclusive advices here
+    // ESLint rules are giving mutually exclusive advices here!!!
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     if (depContainer !== undefined && depContainer.isRegistered(SERVICES.LOGGER)) {
       const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
