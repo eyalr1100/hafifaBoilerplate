@@ -77,18 +77,26 @@ describe('product', function () {
   });
 
   afterAll(async function () {
-    const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-    const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+    try {
+      // Resolve dependencies BEFORE resetting container
+      const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+      const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
 
-    await registry.trigger();
+      // Trigger cleanup registry first
+      await registry.trigger();
 
-    if (dataSource.isInitialized) {
-      await dataSource.destroy();
+      // Ensure dataSource is properly destroyed
+      if (dataSource.isInitialized) {
+        await dataSource.destroy();
+      }
+    } catch (error) {
+      console.error('Error during cleanup:', error);
+    } finally {
+      // Reset container after cleanup is complete
+      container.reset();
+      container.clearInstances();
     }
-
-    container.reset();
   });
-
   describe('POST /products', () => {
     describe('success cases', () => {
       it('creates a product and makes it searchable by name', async () => {

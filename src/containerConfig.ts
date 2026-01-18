@@ -85,8 +85,13 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
         const dataSource = deps.resolve<DataSource>(DATA_SOURCE_PROVIDER);
         if (!dataSource.isInitialized) {
           await dataSource.initialize();
-          initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
-          addTransactionalDataSource(dataSource);
+
+          // Only use transactional in non-test environments
+          if (process.env.NODE_ENV !== 'test') {
+            initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
+            addTransactionalDataSource(dataSource);
+          }
+
           cleanupRegistry.register({ id: DATA_SOURCE_PROVIDER, func: dataSource.destroy.bind(dataSource) });
         }
       },

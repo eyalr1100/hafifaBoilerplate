@@ -16,7 +16,7 @@ module.exports = {
     '<rootDir>/src/**/*.ts',
     '!*/node_modules/',
     '!/vendor/**',
-    '!*/common/**',
+    '!**/common/**',
     '!**/controllers/**',
     '!**/routes/**',
     '!**/DAL/**',
@@ -30,9 +30,13 @@ module.exports = {
   ],
   rootDir: '../../../.',
   setupFiles: ['<rootDir>/tests/configurations/jest.setup.ts'],
+  globalSetup: '<rootDir>/tests/integration/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',
-  forceExit: true,
   testEnvironment: 'node',
+  // Detect async operations that prevent Jest from exiting
+  detectOpenHandles: true,
+  // Give tests reasonable time to complete
+  testTimeout: 30000,
   coverageThreshold: {
     global: {
       branches: 80,
