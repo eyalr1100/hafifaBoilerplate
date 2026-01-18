@@ -19,6 +19,6 @@
       "@openapi": ["src/openapi"]
     }
   },
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "db", "dataSource.ts"],
   "exclude": ["node_modules", "dist"]
 }
