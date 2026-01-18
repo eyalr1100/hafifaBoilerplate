@@ -4,6 +4,7 @@ export type IProductModel = components['schemas']['product'];
 export type IProductCreate = components['schemas']['productCreate'];
 export type IProductUpdate = components['schemas']['productBase'];
 export type ISearchParameter = components['schemas']['searchParameter'];
+export type IBoundingPolygon = components['schemas']['boundingPolygon'];
 export type IPolygon = components['schemas']['Polygon'];
 export type IProtocolType = components['schemas']['protocol'];
 export type IProductType = components['schemas']['productType'];
