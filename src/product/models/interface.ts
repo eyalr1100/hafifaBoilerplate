@@ -9,6 +9,9 @@ export type IPolygon = components['schemas']['Polygon'];
 export type IProtocolType = components['schemas']['protocol'];
 export type IProductType = components['schemas']['productType'];
 export type IComparableNumber = components['schemas']['comparableNumber'];
+export interface ProductId {
+  id: components['schemas']['uuid'];
+}
 
 // Constants in UPPER_CASE or camelCase
 export const productType = {

@@ -5,7 +5,7 @@ import { type Registry, Counter } from 'prom-client';
 import { RequestHandler } from 'express';
 import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
-import { IProductCreate, IProductUpdate, ISearchParameter } from '../models/interface';
+import { IProductCreate, IProductUpdate, ISearchParameter, ProductId } from '../models/interface';
 import { Product } from '../models/product';
 
 type SearchProductHandler = RequestHandler<undefined, Product[] | string, ISearchParameter>;
@@ -57,8 +57,4 @@ export class ProductController {
       return next(error);
     }
   };
-}
-
-export interface ProductId {
-  id: string;
 }
