@@ -30,8 +30,7 @@ export const createDataSourceOptions = (dbConfig: DbConfig): DataSourceOptions =
 };
 
 export const getCachedDataSource = (dbConfig: DbConfig): DataSource => {
-  // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-  if (!connectionSingleton || !connectionSingleton.isInitialized) {
+  if (connectionSingleton?.isInitialized !== true) {
     connectionSingleton = new DataSource(createDataSourceOptions(dbConfig));
   }
   return connectionSingleton;
@@ -51,4 +50,15 @@ export const dataSourceFactory: FactoryFunction<DataSource> = (container: Depend
   const dbConfig = config.get('db') as DbConfig;
   const dataSource = getCachedDataSource(dbConfig);
   return dataSource;
+};
+
+export const resetConnectionSingleton = (): void => {
+  connectionSingleton = undefined;
+};
+
+export const destroyConnectionSingleton = async (): Promise<void> => {
+  if (connectionSingleton?.isInitialized === true) {
+    await connectionSingleton.destroy();
+  }
+  connectionSingleton = undefined;
 };

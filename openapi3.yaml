@@ -1,8 +1,14 @@
 openapi: 3.0.3
 info:
-  title: Dataset Search API
+  title: service-name
+  description: basic template for map colonies service
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
 
+security:
+  - {}
 components:
   schemas:
     uuid:
@@ -153,19 +159,6 @@ components:
       items:
         type: number
 
-    position:
-      type: array
-      minItems: 2
-      maxItems: 3
-      items:
-        type: number
-
-    linearRing:
-      type: array
-      minItems: 4
-      items:
-        $ref: '#/components/schemas/position'
-
     boundingPolygon:
       type: object
       properties:
@@ -306,6 +299,7 @@ components:
 paths:
   /products:
     post:
+      operationId: createProduct
       summary: Creates a new product
       requestBody:
         content:
@@ -322,6 +316,7 @@ paths:
 
   /products/search:
     post:
+      operationId: searchProducts
       summary: Searches for products
       requestBody:
         content:
@@ -346,6 +341,7 @@ paths:
           $ref: '#/components/schemas/uuid'
 
     put:
+      operationId: updateProduct
       summary: Partially updates a product by ID
       requestBody:
         content:
@@ -363,6 +359,7 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
 
     delete:
+      operationId: deleteProduct
       summary: Deletes a product by ID
       responses:
         '204':

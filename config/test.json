@@ -10,7 +10,7 @@
     "host": "localhost",
     "port": 5432,
     "username": "postgres",
-    "password": "1508",
+    "password": "postgres",
     "database": "product_test",
     "enableSslAuth": false,
     "sslPaths": {
