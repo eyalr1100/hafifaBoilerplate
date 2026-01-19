@@ -33,27 +33,18 @@ export const isComparableNumber = (value: unknown): value is IComparableNumber =
 
 // Spatial filter
 export const addSpatialFilter = (qb: SelectQueryBuilder<Product>, filter: IBoundingPolygon): void => {
+  const spatialOperators: Record<keyof IBoundingPolygon, string> = {
+    intersects: 'ST_Intersects',
+    contains: 'ST_Contains',
+    within: 'ST_Within',
+  };
+
   Object.entries(filter).forEach(([key, polygon]) => {
-    const polygonParam = 'ST_GeomFromGeoJSON(:polygon)';
-
-    switch (key as keyof IBoundingPolygon) {
-      case 'intersects':
-        qb.andWhere(`ST_Intersects(product.boundingPolygon, ${polygonParam})`, {
-          polygon: JSON.stringify(polygon),
-        });
-        break;
-
-      case 'contains':
-        qb.andWhere(`ST_Contains(product.boundingPolygon, ${polygonParam})`, {
-          polygon: JSON.stringify(polygon),
-        });
-        break;
-
-      case 'within':
-        qb.andWhere(`ST_Within(product.boundingPolygon, ${polygonParam})`, {
-          polygon: JSON.stringify(polygon),
-        });
-        break;
+    const operator = spatialOperators[key as keyof IBoundingPolygon];
+    if (operator) {
+      qb.andWhere(`${operator}(product.boundingPolygon, ST_GeomFromGeoJSON(:polygon))`, {
+        polygon: JSON.stringify(polygon),
+      });
     }
   });
 };
