@@ -34,7 +34,7 @@ void getApp()
       const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
       logger.error({ msg: '😢 - failed initializing the server', err: error });
     } else {
-      console.error('😢 - failed initializing the server', error);
+      console.error('CRITICAL: failed to initialize server - logging system unavailable', error);
     }
 
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
