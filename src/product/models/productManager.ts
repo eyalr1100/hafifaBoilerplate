@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SERVICES } from '@common/constants';
 import { NotFoundError } from '@src/common/errors';
 import { addNumericFilter, addSimpleFilter, addSpatialFilter, isComparableNumber } from '../utils/filters';
-import { IBoundingPolygon, IProductCreate, IProductUpdate, ISearchParameter } from './interface';
+import { IProductCreate, IProductUpdate, ISearchParameter } from './interface';
 import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product';
 
 @injectable()
@@ -49,12 +49,15 @@ export class ProductManager {
         continue;
       }
 
-      if (key === 'boundingPolygon') {
-        addSpatialFilter(qb, value as IBoundingPolygon);
+      if (typeof value === 'string') {
+        addSimpleFilter(qb, key, value);
         continue;
       }
 
-      addSimpleFilter(qb, key, value as string);
+      if (key === 'boundingPolygon') {
+        addSpatialFilter(qb, value);
+        continue;
+      }
     }
 
     console.log(qb.getSql());
