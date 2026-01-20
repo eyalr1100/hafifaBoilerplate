@@ -21,10 +21,17 @@ describe('docs', function () {
   });
 
   beforeEach(async function () {
+    const mockDataSource = {
+      isInitialized: false,
+      destroy: jest.fn().mockResolvedValue(undefined),
+      getRepository: jest.fn(),
+    } as unknown as DataSource;
+
     const [initializedApp, initializedContainer] = await getApp({
       override: [
         { token: SERVICES.LOGGER, provider: { useValue: jsLogger({ enabled: false }) } },
         { token: SERVICES.TRACER, provider: { useValue: trace.getTracer('testTracer') } },
+        { token: DATA_SOURCE_PROVIDER, provider: { useValue: mockDataSource } },
       ],
       useChild: true,
     });
