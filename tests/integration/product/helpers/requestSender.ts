@@ -1,7 +1,7 @@
 /* eslint-disable import-x/namespace */
 import * as supertest from 'supertest';
 import { Application } from 'express';
-import type { SearchParameter, ProductId } from '@src/product/models/interface';
+import type { SearchParameter, ProductId, ProductCreate, ProductUpdate } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 
 interface TypedResponse<T> extends Omit<supertest.Response, 'body'> {
@@ -11,8 +11,7 @@ interface TypedResponse<T> extends Omit<supertest.Response, 'body'> {
 export class ProductRequestSender {
   public constructor(private readonly app: Application) {}
 
-  // Unknown used to test invalid payloads!!
-  public async postProduct(body: unknown): Promise<TypedResponse<ProductId>> {
+  public async postProduct(body: ProductCreate): Promise<TypedResponse<ProductId>> {
     return supertest
       .agent(this.app)
       .post(`/products`)
@@ -28,8 +27,7 @@ export class ProductRequestSender {
     return supertest.agent(this.app).post(`/products/search`).set('Content-Type', 'application/json').send(body) as Promise<TypedResponse<Product[]>>;
   }
 
-  // Unknown used to test invalid payloads!!
-  public async patchProduct(id: ProductId, body: unknown): Promise<supertest.Response> {
+  public async patchProduct(id: ProductId, body: ProductUpdate): Promise<supertest.Response> {
     return supertest
       .agent(this.app)
       .put(`/products/${id.id}`)

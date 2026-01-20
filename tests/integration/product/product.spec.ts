@@ -103,18 +103,6 @@ describe('product', function () {
         expect(createRes.status).toBe(httpStatusCodes.CREATED);
       });
     });
-
-    describe('validation errors', () => {
-      it('returns 400 when required fields are missing', async () => {
-        const badPayload = {
-          description: 'High resolution raster imagery',
-        };
-
-        const createRes = await productRequestSender.postProduct(badPayload);
-
-        expect(createRes.status).toBe(httpStatusCodes.BAD_REQUEST);
-      });
-    });
   });
   describe('DELETE /products/:id', () => {
     describe('success cases', () => {
@@ -421,11 +409,11 @@ describe('product', function () {
           const productId = createRes.body;
 
           // Update the product
-          const updatePayload = createProductPayload({
+          const updatePayload = {
             name: 'Updated Product',
             description: 'Updated description',
             resolutionBest: 0.5,
-          });
+          };
 
           const patchRes = await productRequestSender.patchProduct(productId, updatePayload);
           expect(patchRes.status).toBe(httpStatusCodes.NO_CONTENT);

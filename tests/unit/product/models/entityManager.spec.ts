@@ -4,7 +4,7 @@ import { Product } from '@src/product/models/product';
 import { ProductManager } from '@src/product/models/productManager';
 import { createFakeProduct } from '@tests/helperes/helpers';
 import { NotFoundError } from '@src/common/errors';
-import { BoundingPolygon, ProductUpdate, SearchParameter } from '@src/product/models/interface';
+import type { BoundingPolygon, ProductUpdate, SearchParameter } from '@src/product/models/interface';
 import { addNumericFilter, addSimpleFilter, addSpatialFilter, isComparableNumber } from '@src/product/utils/filters';
 
 jest.mock('typeorm-transactional', (): object => ({
