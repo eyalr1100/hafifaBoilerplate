@@ -60,7 +60,7 @@ export class ProductManager {
       }
     }
 
-    console.log(qb.getSql());
+    this.logger.info({ msg: 'SQL query generated', sql: qb.getSql() });
 
     return qb.getMany();
   }

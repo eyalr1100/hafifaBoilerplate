@@ -1,8 +1,7 @@
 /* eslint-disable import-x/namespace */
 import * as supertest from 'supertest';
 import { Application } from 'express';
-import { ProductId } from '@src/product/controllers/productController';
-import { ISearchParameter } from '@src/product/models/interface';
+import { ISearchParameter, ProductId } from '@src/product/models/interface';
 
 export class ProductRequestSender {
   public constructor(private readonly app: Application) {}
