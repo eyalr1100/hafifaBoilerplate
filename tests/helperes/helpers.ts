@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
-import { Polygon } from 'geojson';
-import { ProductCreate, productType, consumptionProtocol } from '@src/product/models/interface';
+import { type Polygon } from 'geojson';
+import { type ProductCreate, productType, consumptionProtocol } from '@src/product/models/interface';
 
 export const createFakeBoundingPolygon = (): Polygon => {
   // Use faker.number for coordinates instead of faker.location (which may not exist in older versions)

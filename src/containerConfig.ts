@@ -11,7 +11,7 @@ import { InjectionObject, registerDependencies } from '@common/dependencyRegistr
 import { ON_SIGNAL, SERVICES, SERVICE_NAME } from '@common/constants';
 import { getTracing } from '@common/tracing';
 import { productRouterFactory, PRODUCT_ROUTER_SYMBOL } from './product/routes/productRouter';
-import { ConfigType, getConfig } from './common/config';
+import { type ConfigType, getConfig } from './common/config';
 import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product/models/product';
 import { DATA_SOURCE_PROVIDER, dataSourceFactory } from './common/db/connection';
 

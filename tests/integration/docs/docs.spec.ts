@@ -35,23 +35,21 @@ describe('docs', function () {
 
   afterEach(async function () {
     // Clean up after each test
-    if (container) {
-      const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-      const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
+    const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+    const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
 
-      await registry.trigger();
+    await registry.trigger();
 
-      if (dataSource?.isInitialized) {
-        try {
-          await dataSource.destroy();
-        } catch (error) {
-          console.error('Error destroying dataSource:', error);
-        }
+    if (dataSource.isInitialized) {
+      try {
+        await dataSource.destroy();
+      } catch (error) {
+        console.error('Error destroying dataSource:', error);
       }
-
-      container.reset();
-      container.clearInstances();
     }
+
+    container.reset();
+    container.clearInstances();
   });
 
   describe('Happy Path', function () {

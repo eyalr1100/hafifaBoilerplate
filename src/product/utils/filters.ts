@@ -1,7 +1,7 @@
 import { SelectQueryBuilder } from 'typeorm';
-import { Polygon } from 'geojson';
+import { type Polygon } from 'geojson';
 import { Product } from '../models/product';
-import { BoundingPolygon, ComparableNumber, SPATIAL_OPERATORS, SpatialOperator } from '../models/interface';
+import { type BoundingPolygon, type ComparableNumber, SPATIAL_OPERATORS, type SpatialOperator } from '../models/interface';
 
 // Simple filter
 export const addSimpleFilter = (qb: SelectQueryBuilder<Product>, field: string, value: string | number): void => {

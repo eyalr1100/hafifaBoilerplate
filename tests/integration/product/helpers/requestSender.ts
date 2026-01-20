@@ -1,7 +1,7 @@
 /* eslint-disable import-x/namespace */
 import * as supertest from 'supertest';
 import { Application } from 'express';
-import { SearchParameter, ProductId } from '@src/product/models/interface';
+import type { SearchParameter, ProductId } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 
 interface TypedResponse<T> extends Omit<supertest.Response, 'body'> {

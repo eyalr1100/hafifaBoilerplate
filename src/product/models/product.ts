@@ -1,6 +1,6 @@
 import { Entity as OrmEntity, Index, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { Polygon } from 'geojson';
-import { ConsumptionProtocol, consumptionProtocol, ProductModel, ProductType, productType } from './interface';
+import { type Polygon } from 'geojson';
+import { type ConsumptionProtocol, consumptionProtocol, type ProductModel, type ProductType, productType } from './interface';
 
 export const PRODUCT_REPOSITORY_SYMBOL = Symbol('ProductRepository');
 

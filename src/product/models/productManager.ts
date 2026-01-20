@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SERVICES } from '@common/constants';
 import { NotFoundError } from '@src/common/errors';
 import { addNumericFilter, addSimpleFilter, addSpatialFilter, isComparableNumber } from '../utils/filters';
-import { ProductUpdate, SearchParameter, ProductCreate } from './interface';
+import type { ProductUpdate, SearchParameter, ProductCreate } from './interface';
 import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product';
 
 @injectable()

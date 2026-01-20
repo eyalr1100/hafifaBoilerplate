@@ -1,5 +1,5 @@
-import { Polygon } from 'geojson';
-import { components } from '@src/openapi';
+import { type Polygon } from 'geojson';
+import { type components } from '@src/openapi';
 
 type OpenApiProductModel = components['schemas']['product'];
 type OpenApiProductCreate = components['schemas']['productCreate'];
