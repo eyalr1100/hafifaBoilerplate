@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SERVICES } from '@common/constants';
 import { NotFoundError } from '@src/common/errors';
 import { addNumericFilter, addSimpleFilter, addSpatialFilter, isComparableNumber } from '../utils/filters';
-import { IProductCreate, IProductUpdate, ISearchParameter } from './interface';
+import { ProductUpdate, SearchParameter, ProductCreate } from './interface';
 import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product';
 
 @injectable()
@@ -14,7 +14,7 @@ export class ProductManager {
     @inject(SERVICES.LOGGER) private readonly logger: Logger
   ) {}
 
-  public async createProduct(newProduct: IProductCreate): Promise<string> {
+  public async createProduct(newProduct: ProductCreate): Promise<string> {
     const { name, description } = newProduct;
     this.logger.info({ msg: 'creating new product', name, description });
 
@@ -23,7 +23,7 @@ export class ProductManager {
     return result.id;
   }
 
-  public async updateProduct(id: string, productDTO: IProductUpdate): Promise<void> {
+  public async updateProduct(id: string, productDTO: ProductUpdate): Promise<void> {
     this.logger.info({ msg: 'updating product', id, productDTO });
     const result = await this.repository.update({ id }, productDTO);
 
@@ -40,7 +40,7 @@ export class ProductManager {
     }
   }
 
-  public async searchProduct(searchParameter: ISearchParameter): Promise<Product[]> {
+  public async searchProduct(searchParameter: SearchParameter): Promise<Product[]> {
     const qb = this.repository.createQueryBuilder('product');
 
     for (const [key, value] of Object.entries(searchParameter)) {

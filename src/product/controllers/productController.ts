@@ -5,12 +5,12 @@ import { type Registry, Counter } from 'prom-client';
 import { RequestHandler } from 'express';
 import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
-import { IProductCreate, IProductUpdate, ISearchParameter, ProductId } from '../models/interface';
+import { ProductUpdate, ProductCreate, ProductId, SearchParameter } from '../models/interface';
 import { Product } from '../models/product';
 
-type SearchProductHandler = RequestHandler<undefined, Product[] | string, ISearchParameter>;
-type PostEntityHandler = RequestHandler<undefined, ProductId, IProductCreate>;
-type PutEntityHandler = RequestHandler<ProductId, undefined, IProductUpdate>;
+type SearchProductHandler = RequestHandler<undefined, Product[] | string, SearchParameter>;
+type PostEntityHandler = RequestHandler<undefined, ProductId | string, ProductCreate>;
+type PutEntityHandler = RequestHandler<ProductId, undefined, ProductUpdate>;
 type DeleteProduct = RequestHandler<ProductId, undefined, undefined>;
 
 @injectable()

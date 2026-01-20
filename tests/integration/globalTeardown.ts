@@ -23,7 +23,7 @@ export default async (): Promise<void> => {
     console.error('Error in globalTeardown:', error);
   } finally {
     // Ensure connection is properly destroyed
-    if (dataSource?.isInitialized) {
+    if (dataSource?.isInitialized === true) {
       try {
         await dataSource.destroy();
       } catch (error) {

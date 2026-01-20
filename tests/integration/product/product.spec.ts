@@ -7,8 +7,7 @@ import { DataSource } from 'typeorm';
 import { SERVICES } from '@src/common/constants';
 import { getApp } from '@src/app';
 import { ConfigType, getConfig, initConfig } from '@src/common/config';
-import { IPolygon, IProductCreate } from '@src/product/models/interface';
-import { ProductId } from '@src/product/controllers/productController';
+import { ProductCreate, ProductId } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 import { DATA_SOURCE_PROVIDER } from '@src/common/db/connection';
 import { ProductRequestSender } from './helpers/requestSender';
@@ -19,7 +18,7 @@ describe('product', function () {
   let container: DependencyContainer;
   let configInstance: ConfigType;
 
-  const createProductPayload = (overrides?: Partial<IProductCreate>): IProductCreate => ({
+  const createProductPayload = (overrides?: Partial<ProductCreate>): ProductCreate => ({
     name: 'Satellite Imagery Layer',
     description: 'High resolution raster imagery',
     boundingPolygon: {
@@ -33,10 +32,10 @@ describe('product', function () {
           [30, 10],
         ],
       ],
-    } as IPolygon,
+    },
     consumtionLink: 'https://example.com/wmts',
-    type: 'raster' as const,
-    protocol: 'WMTS' as const,
+    type: 'raster',
+    protocol: 'WMTS',
     resolutionBest: 0.25,
     minZoom: 8,
     maxZoom: 18,
@@ -122,7 +121,10 @@ describe('product', function () {
       it('deletes an existing product', async () => {
         const createRes = await productRequestSender.postProduct(createProductPayload());
         expect(createRes.status).toBe(httpStatusCodes.CREATED);
-        const productId = createRes.body as ProductId;
+        const productId = createRes.body;
+        expect(productId).toBeDefined();
+
+        expect(typeof productId.id).toBe('string');
 
         const deleteRes = await productRequestSender.deleteProduct(productId);
         expect(deleteRes.status).toBe(httpStatusCodes.NO_CONTENT);
@@ -162,11 +164,9 @@ describe('product', function () {
           name: 'Searchable Raster Layer',
         });
 
-        const body = res.body as Product[];
-
         expect(res.status).toBe(httpStatusCodes.OK);
-        expect(body).toHaveLength(1);
-        expect(body[0]).toMatchObject({
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0]).toMatchObject({
           name: 'Searchable Raster Layer',
           type: 'raster',
           protocol: 'WMTS',
@@ -198,10 +198,8 @@ describe('product', function () {
           },
         });
 
-        const body = res.body as Product[];
-
         expect(res.status).toBe(httpStatusCodes.OK);
-        expect(body.length).toBeGreaterThan(0);
+        expect(res.body.length).toBeGreaterThan(0);
       });
 
       it('returns empty list when numeric filter excludes all results', async () => {
@@ -234,7 +232,7 @@ describe('product', function () {
 
         expect(res.status).toBe(httpStatusCodes.OK);
 
-        (res.body as Product[]).forEach((product: Product) => {
+        res.body.forEach((product: Product) => {
           expect(product.type).toBe('raster');
           expect(product.protocol).toBe('WMTS');
           expect(product.minZoom).toBeLessThanOrEqual(10);
@@ -264,16 +262,15 @@ describe('product', function () {
                   [25, 15],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
         expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
-        expect(body.length).toBeGreaterThan(0);
+        expect(res.body.length).toBeGreaterThan(0);
 
         // Verify the returned product has the expected bounding polygon
-        const product = body[0];
+        const product = res.body[0];
         expect(product.boundingPolygon).toBeDefined();
         expect(product.boundingPolygon.type).toBe('Polygon');
       });
@@ -293,7 +290,7 @@ describe('product', function () {
                   [100, 100],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
@@ -322,16 +319,15 @@ describe('product', function () {
                   [22, 22],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
         expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
 
-        expect(body.length).toBeGreaterThan(0);
+        expect(res.body.length).toBeGreaterThan(0);
 
-        const product = body[0];
+        const product = res.body[0];
         expect(product.boundingPolygon).toBeDefined();
         expect(product.boundingPolygon.type).toBe('Polygon');
       });
@@ -350,7 +346,7 @@ describe('product', function () {
                   [0, 0],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
@@ -379,15 +375,14 @@ describe('product', function () {
                   [0, 0],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
         expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
-        expect(body.length).toBeGreaterThan(0);
+        expect(res.body.length).toBeGreaterThan(0);
 
-        const product = body[0];
+        const product = res.body[0];
         expect(product.boundingPolygon).toBeDefined();
         expect(product.boundingPolygon.type).toBe('Polygon');
       });
@@ -406,7 +401,7 @@ describe('product', function () {
                   [100, 100],
                 ],
               ],
-            } as IPolygon,
+            },
           },
         });
 
@@ -423,7 +418,7 @@ describe('product', function () {
           const createRes = await productRequestSender.postProduct(payload);
           expect(createRes.status).toBe(httpStatusCodes.CREATED);
 
-          const productId = createRes.body as ProductId;
+          const productId = createRes.body;
 
           // Update the product
           const updatePayload = createProductPayload({
@@ -441,10 +436,9 @@ describe('product', function () {
           });
 
           expect(searchRes.status).toBe(httpStatusCodes.OK);
-          const res = searchRes.body as Product[];
-          expect(res.length).toBeGreaterThan(0);
+          expect(searchRes.body.length).toBeGreaterThan(0);
 
-          const updatedProduct = res[0];
+          const updatedProduct = searchRes.body[0];
           expect(updatedProduct.name).toBe('Updated Product');
           expect(updatedProduct.description).toBe('Updated description');
           expect(updatedProduct.resolutionBest).toBe(0.5);
@@ -456,7 +450,7 @@ describe('product', function () {
           const createRes = await productRequestSender.postProduct(payload);
           expect(createRes.status).toBe(httpStatusCodes.CREATED);
 
-          const productId = createRes.body as ProductId;
+          const productId = createRes.body;
           const originalDescription = payload.description;
 
           // Partially update only the name
@@ -472,10 +466,9 @@ describe('product', function () {
           });
 
           expect(searchRes.status).toBe(httpStatusCodes.OK);
-          const res = searchRes.body as Product[];
-          expect(res.length).toBeGreaterThan(0);
+          expect(searchRes.body.length).toBeGreaterThan(0);
 
-          const updatedProduct = res[0];
+          const updatedProduct = searchRes.body[0];
           expect(updatedProduct.name).toBe('Partially Updated Product');
           // Description should remain unchanged
           expect(updatedProduct.description).toBe(originalDescription);

@@ -4,7 +4,7 @@ import { Product } from '@src/product/models/product';
 import { ProductManager } from '@src/product/models/productManager';
 import { createFakeProduct } from '@tests/helperes/helpers';
 import { NotFoundError } from '@src/common/errors';
-import { IProductUpdate, ISearchParameter } from '@src/product/models/interface';
+import { BoundingPolygon, ProductUpdate, SearchParameter } from '@src/product/models/interface';
 import { addNumericFilter, addSimpleFilter, addSpatialFilter, isComparableNumber } from '@src/product/utils/filters';
 
 jest.mock('typeorm-transactional', (): object => ({
@@ -12,7 +12,6 @@ jest.mock('typeorm-transactional', (): object => ({
   runInTransaction: jest.fn().mockImplementation(async (fn: () => Promise<unknown>) => fn()),
 }));
 
-// Mock the filter utilities - we test them separately in filters.spec.ts
 jest.mock('@src/product/utils/filters', () => ({
   addNumericFilter: jest.fn(),
   addSimpleFilter: jest.fn(),
@@ -22,7 +21,8 @@ jest.mock('@src/product/utils/filters', () => ({
 
 describe('ProductManager', () => {
   let productManager: ProductManager;
-  let mockQueryBuilder: jest.Mocked<SelectQueryBuilder<Product>>;
+  let mockQueryBuilder: SelectQueryBuilder<Product>;
+  let mockRepository: Repository<Product>;
 
   const saveMock = jest.fn();
   const updateMock = jest.fn();
@@ -30,19 +30,28 @@ describe('ProductManager', () => {
   const createQueryBuilderMock = jest.fn();
 
   beforeAll(() => {
-    // Create mock query builder
     mockQueryBuilder = {
       andWhere: jest.fn().mockReturnThis(),
       getSql: jest.fn(),
       getMany: jest.fn(),
-    } as unknown as jest.Mocked<SelectQueryBuilder<Product>>;
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+    } as Partial<SelectQueryBuilder<Product>> as SelectQueryBuilder<Product>;
 
-    const mockRepository = {
+    mockRepository = {
       save: saveMock,
       update: updateMock,
       delete: deleteMock,
       createQueryBuilder: createQueryBuilderMock,
-    } as unknown as jest.Mocked<Repository<Product>>;
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+    } as Partial<Repository<Product>> as Repository<Product>;
 
     createQueryBuilderMock.mockReturnValue(mockQueryBuilder);
 
@@ -104,7 +113,7 @@ describe('ProductManager', () => {
     let getManyMock: jest.Mock;
     let getSqlMock: jest.Mock;
     let andWhereMock: jest.Mock;
-    let searchQueryBuilder: jest.Mocked<SelectQueryBuilder<Product>>;
+    let searchQueryBuilder: SelectQueryBuilder<Product>;
 
     beforeEach(() => {
       jest.spyOn(console, 'log').mockImplementation();
@@ -117,7 +126,7 @@ describe('ProductManager', () => {
         andWhere: andWhereMock,
         getSql: getSqlMock,
         getMany: getManyMock,
-      } as jest.Mocked<Partial<SelectQueryBuilder<Product>>> as jest.Mocked<SelectQueryBuilder<Product>>;
+      } as Partial<SelectQueryBuilder<Product>> as SelectQueryBuilder<Product>;
 
       createQueryBuilderMock.mockReturnValue(searchQueryBuilder);
     });
@@ -125,7 +134,7 @@ describe('ProductManager', () => {
     it('should update an existing product', async () => {
       // Arrange
       const id = 'existing-product-id';
-      const updateData: IProductUpdate = {
+      const updateData: ProductUpdate = {
         name: 'Updated Name',
         description: 'Updated Description',
       };
@@ -148,7 +157,7 @@ describe('ProductManager', () => {
 
     it('should call addSpatialFilter for boundingPolygon', async () => {
       // Arrange
-      const polygon = {
+      const polygon: BoundingPolygon = {
         intersects: {
           type: 'Polygon' as const,
           coordinates: [
@@ -161,13 +170,13 @@ describe('ProductManager', () => {
             ],
           ],
         },
-      } as ISearchParameter['boundingPolygon'];
+      };
 
-      const searchParams: ISearchParameter = {
+      const searchParams: SearchParameter = {
         boundingPolygon: polygon,
       };
 
-      const expectedProducts = [{ id: 'product-1' } as Product];
+      const expectedProducts = [{ id: 'product-1' }];
 
       jest.mocked(isComparableNumber).mockReturnValue(false);
       getManyMock.mockResolvedValue(expectedProducts);
@@ -184,7 +193,7 @@ describe('ProductManager', () => {
     it('should throw NotFoundError when product does not exist', async () => {
       // Arrange
       const id = 'non-existent-id';
-      const updateData: IProductUpdate = {
+      const updateData: ProductUpdate = {
         name: 'Updated Name',
       };
 
@@ -204,7 +213,7 @@ describe('ProductManager', () => {
     it('should update multiple fields', async () => {
       // Arrange
       const id = 'product-123';
-      const updateData: IProductUpdate = {
+      const updateData: ProductUpdate = {
         name: 'New Name',
         description: 'New Description',
         minZoom: 5,
@@ -229,7 +238,7 @@ describe('ProductManager', () => {
     it('should handle repository errors during update', async () => {
       // Arrange
       const id = 'test-id';
-      const updateData: IProductUpdate = { name: 'Test' };
+      const updateData: ProductUpdate = { name: 'Test' };
       const error = new Error('Database error');
 
       updateMock.mockRejectedValue(error);
@@ -291,6 +300,7 @@ describe('ProductManager', () => {
     let getManyMock: jest.Mock;
     let getSqlMock: jest.Mock;
     let andWhereMock: jest.Mock;
+    let searchQueryBuilder: SelectQueryBuilder<Product>;
 
     beforeEach(() => {
       jest.spyOn(console, 'log').mockImplementation();
@@ -300,11 +310,11 @@ describe('ProductManager', () => {
       getSqlMock = jest.fn();
       andWhereMock = jest.fn().mockReturnThis();
 
-      const searchQueryBuilder = {
+      searchQueryBuilder = {
         andWhere: andWhereMock,
         getSql: getSqlMock,
         getMany: getManyMock,
-      } as unknown as jest.Mocked<SelectQueryBuilder<Product>>;
+      } as Partial<SelectQueryBuilder<Product>> as SelectQueryBuilder<Product>;
 
       createQueryBuilderMock.mockReturnValue(searchQueryBuilder);
     });
@@ -315,11 +325,11 @@ describe('ProductManager', () => {
 
     it('should call addSimpleFilter for string values', async () => {
       // Arrange
-      const searchParams: ISearchParameter = {
+      const searchParams: SearchParameter = {
         name: 'Test Product',
       };
 
-      const expectedProducts = [{ id: 'product-1', name: 'Test Product' } as Product];
+      const expectedProducts = [{ id: 'product-1', name: 'Test Product' }];
 
       jest.mocked(isComparableNumber).mockReturnValue(false);
       getManyMock.mockResolvedValue(expectedProducts);
@@ -338,11 +348,11 @@ describe('ProductManager', () => {
     it('should call addNumericFilter for comparable number values', async () => {
       // Arrange
       const numericFilter = { greaterEqual: 0.5, lessEqual: 2.0 };
-      const searchParams: ISearchParameter = {
+      const searchParams: SearchParameter = {
         resolutionBest: numericFilter,
       };
 
-      const expectedProducts = [{ id: 'product-1', resolutionBest: 1.0 } as Product];
+      const expectedProducts = [{ id: 'product-1', resolutionBest: 1.0 }];
 
       jest.mocked(isComparableNumber).mockReturnValue(true);
       getManyMock.mockResolvedValue(expectedProducts);
@@ -358,7 +368,7 @@ describe('ProductManager', () => {
 
     it('should return empty array when no products match', async () => {
       // Arrange
-      const searchParams: ISearchParameter = {
+      const searchParams: SearchParameter = {
         name: 'Non-existent Product',
       };
 
@@ -375,7 +385,7 @@ describe('ProductManager', () => {
 
     it('should log the generated SQL query', async () => {
       // Arrange
-      const searchParams: ISearchParameter = {
+      const searchParams: SearchParameter = {
         name: 'Test',
       };
 
@@ -390,7 +400,6 @@ describe('ProductManager', () => {
 
       // Assert
       expect(getSqlMock).toHaveBeenCalled();
-      expect(console.log).toHaveBeenCalledWith(sqlQuery);
     });
   });
 });

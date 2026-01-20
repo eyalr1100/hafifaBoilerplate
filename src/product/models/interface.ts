@@ -1,19 +1,33 @@
+import { Polygon } from 'geojson';
 import { components } from '@src/openapi';
 
-export type IProductModel = components['schemas']['product'];
-export type IProductCreate = components['schemas']['productCreate'];
-export type IProductUpdate = components['schemas']['productBase'];
-export type ISearchParameter = components['schemas']['searchParameter'];
-export type IBoundingPolygon = components['schemas']['boundingPolygon'];
-export type IPolygon = components['schemas']['Polygon'];
-export type IProtocolType = components['schemas']['protocol'];
-export type IProductType = components['schemas']['productType'];
-export type IComparableNumber = components['schemas']['comparableNumber'];
+type OpenApiProductModel = components['schemas']['product'];
+type OpenApiProductCreate = components['schemas']['productCreate'];
+type OpenApiSearchParameter = components['schemas']['searchParameter'];
+
+type WithPolygon<T> = Omit<T, 'boundingPolygon'> & {
+  boundingPolygon: Polygon;
+};
+
+export type ProductModel = WithPolygon<OpenApiProductModel>;
+export type ProductCreate = WithPolygon<OpenApiProductCreate>;
+export type ProductUpdate = components['schemas']['productBase'];
+
+export interface BoundingPolygon {
+  contains?: Polygon;
+  within?: Polygon;
+  intersects?: Polygon;
+}
+
+export type SearchParameter = Omit<OpenApiSearchParameter, 'boundingPolygon'> & {
+  boundingPolygon?: BoundingPolygon;
+};
+
+export type ComparableNumber = components['schemas']['comparableNumber'];
 export interface ProductId {
   id: components['schemas']['uuid'];
 }
 
-// Constants in UPPER_CASE or camelCase
 export const productType = {
   raster: 'raster',
   rasterizedVector: 'rasterized vector',
@@ -28,6 +42,13 @@ export const consumptionProtocol = {
   threeDTiles: '3D Tiles',
 } as const;
 
-// Types in PascalCase
 export type ProductType = (typeof productType)[keyof typeof productType];
 export type ConsumptionProtocol = (typeof consumptionProtocol)[keyof typeof consumptionProtocol];
+
+export const SPATIAL_OPERATORS = {
+  contains: 'ST_Contains',
+  intersects: 'ST_Intersects',
+  within: 'ST_Within',
+} as const;
+
+export type SpatialOperator = keyof typeof SPATIAL_OPERATORS;

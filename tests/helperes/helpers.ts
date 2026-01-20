@@ -1,7 +1,8 @@
 import { faker } from '@faker-js/faker';
-import { IPolygon, IProductCreate, productType, consumptionProtocol } from '@src/product/models/interface';
+import { Polygon } from 'geojson';
+import { ProductCreate, productType, consumptionProtocol } from '@src/product/models/interface';
 
-export const createFakeBoundingPolygon = (): IPolygon => {
+export const createFakeBoundingPolygon = (): Polygon => {
   // Use faker.number for coordinates instead of faker.location (which may not exist in older versions)
   const centerLon = faker.number.float({ min: -180, max: 180, fractionDigits: 6 });
   const centerLat = faker.number.float({ min: -90, max: 90, fractionDigits: 6 });
@@ -18,10 +19,10 @@ export const createFakeBoundingPolygon = (): IPolygon => {
         [centerLon - offset, centerLat - offset],
       ],
     ],
-  } as IPolygon;
+  };
 };
 
-export const createFakeProduct = (params?: Partial<IProductCreate>): IProductCreate => {
+export const createFakeProduct = (params?: Partial<ProductCreate>): ProductCreate => {
   const minZoom = params?.minZoom ?? faker.number.int({ min: 0, max: 10 });
   const maxZoom = params?.maxZoom ?? faker.number.int({ min: minZoom + 1, max: 22 });
 
