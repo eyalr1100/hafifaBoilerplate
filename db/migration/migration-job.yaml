@@ -1,0 +1,40 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: eyal-hafifa-migration
+  namespace: vector-dev
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300 # Auto-cleanup after 5 minutes
+  template:
+    metadata:
+      labels:
+        app: eyal-hafifa-migration
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: acr-secret
+      containers:
+        - name: migration
+          image: acrarolibotnonprod.azurecr.io/eyal-hafifa-migrations:v1.0.0
+          imagePullPolicy: Always
+          env:
+            - name: DB_HOST
+              value: 'postgresql-postgis'
+            - name: DB_PORT
+              value: '5432'
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: POSTGRES_PASSWORD
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret
+                  key: POSTGRES_DB

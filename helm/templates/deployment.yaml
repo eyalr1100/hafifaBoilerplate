@@ -1,19 +1,20 @@
 {{- $releaseName := .Release.Name -}}
-{{- $chartName := include "ts-server-boilerplate.name" . -}}
-{{- $cloudProviderFlavor := include "ts-server-boilerplate.cloudProviderFlavor" . -}}
-{{- $cloudProviderDockerRegistryUrl := include "ts-server-boilerplate.cloudProviderDockerRegistryUrl" . -}}
-{{- $cloudProviderImagePullSecretName := include "ts-server-boilerplate.cloudProviderImagePullSecretName" . -}}
-{{- $imageTag := include "ts-server-boilerplate.tag" . -}}
+{{- $chartName := include "eyal-hafifa-server.name" . -}}
+{{- $cloudProviderFlavor := include "eyal-hafifa-server.cloudProviderFlavor" . -}}
+{{- $cloudProviderDockerRegistryUrl := include "eyal-hafifa-server.cloudProviderDockerRegistryUrl" . -}}
+{{- $cloudProviderImagePullSecretName := include "eyal-hafifa-server.cloudProviderImagePullSecretName" . -}}
+{{- $imageTag := include "eyal-hafifa-server.tag" . -}}
 {{- if .Values.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ printf "%s-deployment" (include "ts-server-boilerplate.fullname" .) }}
+  name: {{ printf "%s-deployment" (include "eyal-hafifa-server.fullname" .) }}
   labels:
     app: {{ $chartName }}
     component: {{ $chartName }}
+    environment: {{ include "eyal-hafifa-server.environment" . }}
     release: {{ $releaseName }}
-    {{- include "ts-server-boilerplate.labels" . | nindent 4 }}
+    {{- include "eyal-hafifa-server.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
@@ -22,22 +23,18 @@ spec:
       app: {{ $chartName }}
       release: {{ $releaseName }}
       run: {{ $releaseName }}-{{ $chartName }}
-      {{- include "ts-server-boilerplate.selectorLabels" . | nindent 6 }}
+      {{- include "eyal-hafifa-server.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
         app: {{ $chartName }}
         release: {{ $releaseName }}
         run: {{ $releaseName }}-{{ $chartName }}
-        {{- include "ts-server-boilerplate.labels" . | nindent 8 }}
+        {{- include "eyal-hafifa-server.labels" . | nindent 8 }}
       annotations:
-        {{ include "mclabels.annotations" . | nindent 8 }}
-      {{- if .Values.resetOnConfigChange }}
-        checksum/configmap: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
-      {{- end }}
-      {{- if .Values.podAnnotations }}
-      {{- toYaml .Values.podAnnotations | nindent 8 }}
-      {{- end }}
+        {{- with .Values.podAnnotations }}  
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
     {{- if $cloudProviderImagePullSecretName }}
       imagePullSecrets:
@@ -80,7 +77,7 @@ spec:
             {{- end }}            
           envFrom:
             - configMapRef:
-                name: {{ printf "%s-configmap" (include "ts-server-boilerplate.fullname" .) }}
+                name: {{ printf "%s-configmap" (include "eyal-hafifa-server.fullname" .) }}
           ports:
             - name: http
               containerPort: {{ .Values.env.targetPort }}
