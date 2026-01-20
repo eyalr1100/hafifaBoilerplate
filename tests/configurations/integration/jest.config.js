@@ -6,8 +6,9 @@ module.exports = {
   transform: {
     '^.+\\.ts$': ['@swc/jest'],
   },
-  // ADD THIS LINE - tells Jest to transform @faker-js package
   transformIgnorePatterns: ['node_modules/(?!(@faker-js)/)'],
+  modulePathIgnorePatterns: ['<rootDir>/dist/'],
+
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, { prefix: '<rootDir>/' }),
   testMatch: ['<rootDir>/tests/integration/**/*.spec.ts'],
   coverageReporters: ['text', 'html'],
@@ -33,10 +34,7 @@ module.exports = {
   globalSetup: '<rootDir>/tests/integration/globalSetup.ts',
   globalTeardown: '<rootDir>/tests/integration/globalTeardown.ts',
   testEnvironment: 'node',
-  // Detect async operations that prevent Jest from exiting
-  detectOpenHandles: true,
-  // Give tests reasonable time to complete
-  testTimeout: 30000,
+  testTimeout: 3000,
   coverageThreshold: {
     global: {
       branches: 80,
