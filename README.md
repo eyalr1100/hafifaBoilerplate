@@ -1,124 +1,153 @@
-# Map Colonies typescript service template
+# Geospatial Dataset Search API
 
-----------------------------------
+A TypeScript/Node.js REST API for managing and searching geospatial datasets with PostGIS support.
 
-This is a basic repo template for building new MapColonies web services in Typescript.
+## Features
 
-> [!IMPORTANT]
-> To regenerate the types on openapi change run the command `npm run generate:openapi-types`.
+- CRUD operations for geospatial products
+- Advanced spatial queries (intersection, contains, within)
+- Flexible search with numeric ranges and enum filters
+- PostgreSQL/PostGIS with TypeORM
+- OpenAPI 3.0 specification
+- Dependency injection (tsyringe)
+- OpenTelemetry tracing and metrics
 
-> [!WARNING]
-> After creating a new repo based on this template, you should delete the CODEOWNERS file.
+## Prerequisites
 
+- Node.js >= 20
+- PostgreSQL >= 14 with PostGIS extension
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Set up database
+createdb your_database_name
+psql -d your_database_name -c "CREATE EXTENSION postgis;"
+
+# Run migrations
+npm run migration:run
+
+# Start development server
+npm run start:dev
+```
+
+Server runs on `http://localhost:8080`  
+API docs available at `http://localhost:8080/docs`
+
+## Configuration
+
+Edit `config/default.json` or set environment variables:
+
+```bash
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=your_database_name
+SERVER_PORT=8080
+```
+
+## API Examples
+
+**Create a product:**
+```bash
+POST /products
+{
+  "name": "Satellite Imagery",
+  "description": "High resolution raster",
+  "type": "raster",
+  "protocol": "WMTS",
+  "boundingPolygon": {
+    "type": "Polygon",
+    "coordinates": [[[30,10], [40,40], [20,40], [10,20], [30,10]]]
+  },
+  "consumtionLink": "https://example.com/wmts",
+  "resolutionBest": 0.25,
+  "minZoom": 8,
+  "maxZoom": 18
+}
+```
+
+**Search products:**
+```bash
+POST /products/search
+{
+  "type": "raster",
+  "resolutionBest": { "lessEqual": 1.0 }
+}
+```
+
+## Testing
+
+```bash
+# Run all tests
+npm test
+
+# Unit tests only
+npm run test:unit
+
+# Integration tests only
+npm run test:integration
+
+# Clear test cache (if needed)
+npx jest --clearCache
+```
 
 ## Development
-When in development you should use the command `npm run start:dev`. The main benefits are that it enables offline mode for the config package, and source map support for NodeJS errors.
-
-### Template Features:
-
-- eslint configuration by [@map-colonies/eslint-config](https://github.com/MapColonies/eslint-config)
-
-- prettier configuration by [@map-colonies/prettier-config](https://github.com/MapColonies/prettier-config)
-
-- jest
-
-- .nvmrc
-
-- Multi stage production-ready Dockerfile
-
-- commitlint
-
-- git hooks
-
-- logging by [@map-colonies/js-logger](https://github.com/MapColonies/js-logger)
-
-- OpenAPI request validation
-
-- config load with [node-config](https://www.npmjs.com/package/node-config)
-
-- Tracing and metrics by [@map-colonies/telemetry](https://github.com/MapColonies/telemetry)
-
-- github templates
-
-- bug report
-
-- feature request
-
-- pull request
-
-- github actions
-
-- on pull_request
-
-- LGTM
-
-- test
-
-- lint
-
-- snyk
-
-## API
-Checkout the OpenAPI spec [here](/openapi3.yaml)
-
-## Installation
-
-Install deps with npm
 
 ```bash
-npm install
+# Lint & format
+npm run lint
+npm run format:fix
+
+# Generate OpenAPI types (after modifying openapi3.yaml)
+npm run generate:openapi-types
+
+# Generate migration
+npm run migration:generate -- ./db/migration/YourMigrationName
 ```
 
-## Run Locally
-
-Clone the project
+## Deployment
 
 ```bash
+# Build
+npm run build
 
-git clone https://link-to-project
+# Docker
+docker build -t dataset-search-api .
+docker run -p 8080:8080 -e DB_PASSWORD=secret dataset-search-api
 
+# Kubernetes (Helm)
+helm install dataset-search-api ./helm
 ```
 
-Go to the project directory
-
-```bash
-
-cd my-project
+## Project Structure
 
 ```
+src/
+├── common/          # Shared utilities, config, DB connection
+├── product/         # Product module (controllers, models, routes)
+├── app.ts           # Application factory
+└── index.ts         # Entry point
 
-Install dependencies
-
-```bash
-
-npm install
-
+tests/
+├── integration/     # Integration tests
+└── unit/           # Unit tests
 ```
 
-Start the server
+## Tech Stack
 
-```bash
+- **Runtime:** Node.js 20 + TypeScript 5.8
+- **Framework:** Express.js
+- **Database:** PostgreSQL + PostGIS
+- **ORM:** TypeORM
+- **Testing:** Jest + SWC
+- **API Docs:** OpenAPI 3.0
+- **Observability:** OpenTelemetry + Pino logging
 
-npm run start
+## License
 
-```
-
-## Running Tests
-
-To run tests, run the following command
-
-```bash
-
-npm run test
-
-```
-
-To only run unit tests:
-```bash
-npm run test:unit
-```
-
-To only run integration tests:
-```bash
-npm run test:integration
-```
+ISC
