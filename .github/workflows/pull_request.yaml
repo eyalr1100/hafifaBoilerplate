@@ -87,7 +87,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:14
+        image: postgis:14
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: ${{ env.DB_PASSWORD}}
@@ -121,7 +121,7 @@ jobs:
         shell: bash
 
       - name: Create schema
-        run: psql -h $DB_HOST -d $DB_NAME -U $DB_USERNAME -c 'CREATE SCHEMA id_2_osm;'
+        run: psql -h $DB_HOST -d $DB_NAME -U $DB_USERNAME -c 'CREATE SCHEMA products;'
         env:
           PGPASSWORD: ${{ env.DB_PASSWORD }}
 
