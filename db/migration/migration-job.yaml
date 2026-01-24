@@ -16,8 +16,10 @@ spec:
         - name: acr-secret
       containers:
         - name: migration
-          image: acrarolibotnonprod.azurecr.io/eyal-hafifa-migrations:v1.0.0
+          image: eyal-hafifa-migrations:v1.0.0
           imagePullPolicy: Always
+          imagePullSecrets:
+            - name: acr-secret
           env:
             - name: DB_HOST
               value: 'postgresql-postgis'
