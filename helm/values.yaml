@@ -13,7 +13,7 @@ annotations: {}
 podAnnotations: {}
 
 cloudProvider:
-  dockerRegistryUrl: acrarolibotnonprod.azurecr.io
+  dockerRegistryUrl:
   flavor: openshift
 
 image:
