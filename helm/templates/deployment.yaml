@@ -73,7 +73,25 @@ spec:
               value: {{ printf "[%s/%s]" .Values.caPath .Values.caKey | quote }}
             {{- end }}
             {{- if .Values.extraEnvVars }}
-            {{- toYaml .Values.extraEnvVars | nindent 12 }}
+            {{- range .Values.extraEnvVars }}
+              - name: {{ .name }}
+                value: {{ .value | quote }}
+            {{- end }}
+              - name: DB_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: postgresql-secret
+                    key: POSTGRES_USER
+              - name: DB_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: postgresql-secret
+                    key: POSTGRES_PASSWORD
+              - name: DB_NAME
+                valueFrom:
+                  secretKeyRef:
+                    name: postgresql-secret
+                    key: POSTGRES_DB
             {{- end }}            
           envFrom:
             - configMapRef:
