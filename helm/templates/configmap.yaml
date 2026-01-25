@@ -1,10 +1,12 @@
+{{- $releaseName := .Release.Name -}}
+{{- $chartName := include "eyal-hafifa-server.name" . -}}
 {{- $tracingUrl := include "eyal-hafifa-server.tracingUrl" . -}}
 {{- $metricsUrl := include "eyal-hafifa-server.metricsUrl" . -}}
 {{- if .Values.enabled -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ printf "%s-configmap" (include "eyal-hafifa-server.fullname" .) }}
+  ame: {{ $releaseName }}-{{ $chartName }}-configmap
 data:
   REQUEST_PAYLOAD_LIMIT: {{ .Values.env.requestPayloadLimit | quote }}
   RESPONSE_COMPRESSION_ENABLED: {{ .Values.env.responseCompressionEnabled | quote }}
@@ -14,7 +16,7 @@ data:
   TELEMETRY_TRACING_ENABLED: 'true'
   TELEMETRY_TRACING_URL: {{ $tracingUrl }}
   {{ end }}
-  {{ if .Values.env.metrics.enabled }}
+  {{ if .Values.global.metrics.enabled }}
   TELEMETRY_METRICS_ENABLED: 'true'
   TELEMETRY_METRICS_URL: {{ $metricsUrl }}
   {{ end }}
