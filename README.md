@@ -39,16 +39,16 @@ API docs available at `http://localhost:8080/docs`
 
 ## Configuration
 
-Edit `config/default.json` or set environment variables:
+Edit `config/default.json` or set the following environment variables:
 
-```bash
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=your_database_name
-SERVER_PORT=8080
-```
+| Variable        | Description                    | Default   | Example              |
+|-----------------|--------------------------------|-----------|----------------------|
+| `DB_HOST`       | PostgreSQL host                 | `localhost` | `localhost`          |
+| `DB_PORT`       | PostgreSQL port                 | `5432`      | `5432`               |
+| `DB_USER`       | Database user                   | `postgres`  | `postgres`           |
+| `DB_PASSWORD`   | Database password               | `postgres`  | `secret`             |
+| `DB_NAME`       | Database name                   | —           | `your_database_name` |
+| `SERVER_PORT`   | API server port                 | `8080`      | `8080`               |
 
 ## API Examples
 
