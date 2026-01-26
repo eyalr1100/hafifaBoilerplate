@@ -11,7 +11,7 @@ import { ProductCreate, ProductId } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 import { DATA_SOURCE_PROVIDER } from '@src/common/db/connection';
 import { ProductRequestSender } from './helpers/requestSender';
-import { createProductPayload } from './utils';
+import { createBoundingPolygonSearchParameter, createProductPayload } from './utils';
 
 describe('product', function () {
   let productRequestSender: ProductRequestSender;
@@ -93,12 +93,12 @@ describe('product', function () {
       it('deletes an existing product', async () => {
         const { status } = await productRequestSender.postProduct(createProductPayload());
         expect(status).toBe(httpStatusCodes.CREATED);
-        const productId = (await productRequestSender.postProduct(createProductPayload())).body;
-        expect(productId).toBeDefined();
+        const { body } = await productRequestSender.postProduct(createProductPayload());
+        expect(body).toBeDefined();
 
-        expect(typeof productId.id).toBe('string');
+        expect(typeof body.id).toBe('string');
 
-        const { status: deleteStatus } = await productRequestSender.deleteProduct(productId);
+        const { status: deleteStatus } = await productRequestSender.deleteProduct(body);
         expect(deleteStatus).toBe(httpStatusCodes.NO_CONTENT);
       });
     });
@@ -219,10 +219,10 @@ describe('product', function () {
 
         expect(status).toBe(httpStatusCodes.OK);
 
-        body.forEach((product: Product) => {
-          expect(product.type).toBe('raster');
-          expect(product.protocol).toBe('WMTS');
-          expect(product.minZoom).toBeLessThanOrEqual(10);
+        body.forEach(({ type, protocol, minZoom }) => {
+          expect(type).toBe('raster');
+          expect(protocol).toBe('WMTS');
+          expect(minZoom).toBeLessThanOrEqual(10);
         });
       });
 
@@ -236,22 +236,20 @@ describe('product', function () {
 
         // Search with a polygon that intersects with the seeded product
         // The seeded product has coordinates: [30, 10], [40, 40], [20, 40], [10, 20], [30, 10]
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            intersects: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [25, 15],
-                  [35, 15],
-                  [35, 35],
-                  [25, 35],
-                  [25, 15],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [25, 15],
+                [35, 15],
+                [35, 35],
+                [25, 35],
+                [25, 15],
               ],
-            },
-          },
-        });
+            ],
+            'intersects'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
         expect(body.length).toBeGreaterThan(0);
@@ -264,22 +262,20 @@ describe('product', function () {
 
       it('returns empty list when search polygon does not intersect any products', async () => {
         // Search with a polygon that does not intersect with any products
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            intersects: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [100, 100],
-                  [110, 100],
-                  [110, 110],
-                  [100, 110],
-                  [100, 100],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [100, 100],
+                [110, 100],
+                [110, 110],
+                [100, 110],
+                [100, 100],
               ],
-            },
-          },
-        });
+            ],
+            'intersects'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
         expect(body).toHaveLength(0);
@@ -293,22 +289,20 @@ describe('product', function () {
           })
         );
 
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            contains: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [22, 22],
-                  [28, 22],
-                  [28, 28],
-                  [22, 28],
-                  [22, 22],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [22, 22],
+                [28, 22],
+                [28, 28],
+                [22, 28],
+                [22, 22],
               ],
-            },
-          },
-        });
+            ],
+            'contains'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
 
@@ -320,22 +314,20 @@ describe('product', function () {
       });
 
       it('returns empty list when no product contains the search polygon', async () => {
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            contains: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [0, 0],
-                  [100, 0],
-                  [100, 100],
-                  [0, 100],
-                  [0, 0],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [0, 0],
+                [100, 0],
+                [100, 100],
+                [0, 100],
+                [0, 0],
               ],
-            },
-          },
-        });
+            ],
+            'contains'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
         expect(body).toHaveLength(0);
@@ -349,22 +341,20 @@ describe('product', function () {
           })
         );
 
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            within: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [0, 0],
-                  [50, 0],
-                  [50, 50],
-                  [0, 50],
-                  [0, 0],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [0, 0],
+                [50, 0],
+                [50, 50],
+                [0, 50],
+                [0, 0],
               ],
-            },
-          },
-        });
+            ],
+            'within'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
         expect(body.length).toBeGreaterThan(0);
@@ -375,22 +365,20 @@ describe('product', function () {
       });
 
       it('returns empty list when no product is within the search polygon', async () => {
-        const { status, body } = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            within: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [100, 100],
-                  [101, 100],
-                  [101, 101],
-                  [100, 101],
-                  [100, 100],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [100, 100],
+                [101, 100],
+                [101, 101],
+                [100, 101],
+                [100, 100],
               ],
-            },
-          },
-        });
+            ],
+            'within'
+          )
+        );
 
         expect(status).toBe(httpStatusCodes.OK);
         expect(body).toHaveLength(0);

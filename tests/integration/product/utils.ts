@@ -1,4 +1,5 @@
-import { ProductCreate } from '@src/product/models/interface';
+import { BoundingPolygon, ProductCreate, SearchParameter } from '@src/product/models/interface';
+import { Position } from 'geojson';
 
 export const createProductPayload = (overrides?: Partial<ProductCreate>): ProductCreate => ({
   name: 'Satellite Imagery Layer',
@@ -22,4 +23,13 @@ export const createProductPayload = (overrides?: Partial<ProductCreate>): Produc
   minZoom: 8,
   maxZoom: 18,
   ...overrides,
+});
+
+export const createBoundingPolygonSearchParameter = (coordinates: Position[][], parameter: keyof BoundingPolygon): SearchParameter => ({
+  boundingPolygon: {
+    [parameter]: {
+      type: 'Polygon',
+      coordinates,
+    },
+  },
 });
