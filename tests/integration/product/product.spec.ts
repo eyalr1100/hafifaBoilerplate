@@ -77,14 +77,17 @@ describe('product', function () {
       container.clearInstances();
     }
   });
+
   describe('POST /products', () => {
     describe('success cases', () => {
       it('creates a product and makes it searchable by name', async () => {
         const { status } = await productRequestSender.postProduct(createProductPayload());
+
         expect(status).toBe(httpStatusCodes.CREATED);
       });
     });
   });
+
   describe('DELETE /products/:id', () => {
     describe('success cases', () => {
       it('deletes an existing product', async () => {
