@@ -12,11 +12,7 @@ export class ProductRequestSender {
   public constructor(private readonly app: Application) {}
 
   public async postProduct(body: ProductCreate): Promise<TypedResponse<ProductId>> {
-    return supertest
-      .agent(this.app)
-      .post(`/products`)
-      .set('Content-Type', 'application/json')
-      .send(body as object) as Promise<TypedResponse<ProductId>>;
+    return supertest.agent(this.app).post(`/products`).set('Content-Type', 'application/json').send(body);
   }
 
   public async deleteProduct(id: ProductId): Promise<supertest.Response> {
@@ -28,10 +24,6 @@ export class ProductRequestSender {
   }
 
   public async patchProduct(id: ProductId, body: ProductUpdate): Promise<supertest.Response> {
-    return supertest
-      .agent(this.app)
-      .put(`/products/${id.id}`)
-      .set('Content-Type', 'application/json')
-      .send(body as object);
+    return supertest.agent(this.app).put(`/products/${id.id}`).set('Content-Type', 'application/json').send(body);
   }
 }
