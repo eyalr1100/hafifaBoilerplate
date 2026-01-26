@@ -3,14 +3,13 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { Product } from '@src/product/models/product';
 import { createDataSourceOptions, resetConnectionSingleton } from '../../src/common/db/connection';
-import { getConfig, initConfig } from '../../src/common/config';
+import { getConfig } from '../../src/common/config';
 import { DbConfig } from '../../src/common/interfaces';
 
 export default async (): Promise<void> => {
   let dataSource: DataSource | undefined;
 
   try {
-    await initConfig(true);
     const config = getConfig();
     const dbConfig = config.get('db') as DbConfig;
 
@@ -22,8 +21,7 @@ export default async (): Promise<void> => {
   } catch (error) {
     console.error('Error in globalTeardown:', error);
   } finally {
-    // Ensure connection is properly destroyed
-    if (dataSource?.isInitialized) {
+    if (dataSource?.isInitialized === true) {
       try {
         await dataSource.destroy();
       } catch (error) {
@@ -31,7 +29,6 @@ export default async (): Promise<void> => {
       }
     }
 
-    // Reset the singleton to ensure clean state
     resetConnectionSingleton();
   }
 };

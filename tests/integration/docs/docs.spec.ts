@@ -21,37 +21,22 @@ describe('docs', function () {
   });
 
   beforeEach(async function () {
+    const mockDataSource = {
+      isInitialized: false,
+      getRepository: jest.fn(),
+    } as unknown as DataSource;
+
     const [initializedApp, initializedContainer] = await getApp({
       override: [
         { token: SERVICES.LOGGER, provider: { useValue: jsLogger({ enabled: false }) } },
         { token: SERVICES.TRACER, provider: { useValue: trace.getTracer('testTracer') } },
+        { token: DATA_SOURCE_PROVIDER, provider: { useValue: mockDataSource } },
       ],
       useChild: true,
     });
     app = initializedApp;
     container = initializedContainer;
     requestSender = new DocsRequestSender(app);
-  });
-
-  afterEach(async function () {
-    // Clean up after each test
-    if (container) {
-      const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-      const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
-
-      await registry.trigger();
-
-      if (dataSource?.isInitialized) {
-        try {
-          await dataSource.destroy();
-        } catch (error) {
-          console.error('Error destroying dataSource:', error);
-        }
-      }
-
-      container.reset();
-      container.clearInstances();
-    }
   });
 
   describe('Happy Path', function () {

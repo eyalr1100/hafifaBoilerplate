@@ -7,41 +7,17 @@ import { DataSource } from 'typeorm';
 import { SERVICES } from '@src/common/constants';
 import { getApp } from '@src/app';
 import { ConfigType, getConfig, initConfig } from '@src/common/config';
-import { IPolygon, IProductCreate } from '@src/product/models/interface';
-import { ProductId } from '@src/product/controllers/productController';
+import { ProductCreate, ProductId } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 import { DATA_SOURCE_PROVIDER } from '@src/common/db/connection';
 import { ProductRequestSender } from './helpers/requestSender';
+import { createBoundingPolygonSearchParameter, createProductPayload } from './utils';
 
 describe('product', function () {
   let productRequestSender: ProductRequestSender;
   let app: Application;
   let container: DependencyContainer;
   let configInstance: ConfigType;
-
-  const createProductPayload = (overrides?: Partial<IProductCreate>): IProductCreate => ({
-    name: 'Satellite Imagery Layer',
-    description: 'High resolution raster imagery',
-    boundingPolygon: {
-      type: 'Polygon',
-      coordinates: [
-        [
-          [30, 10],
-          [40, 40],
-          [20, 40],
-          [10, 20],
-          [30, 10],
-        ],
-      ],
-    } as IPolygon,
-    consumtionLink: 'https://example.com/wmts',
-    type: 'raster' as const,
-    protocol: 'WMTS' as const,
-    resolutionBest: 0.25,
-    minZoom: 8,
-    maxZoom: 18,
-    ...overrides,
-  });
 
   beforeAll(async function () {
     await initConfig(true);
@@ -64,6 +40,10 @@ describe('product', function () {
 
     app = initializedApp;
     container = initializedContainer;
+    const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+
+    await dataSource.initialize();
+
     productRequestSender = new ProductRequestSender(app);
   });
 
@@ -97,11 +77,29 @@ describe('product', function () {
       container.clearInstances();
     }
   });
+
   describe('POST /products', () => {
     describe('success cases', () => {
       it('creates a product and makes it searchable by name', async () => {
-        const createRes = await productRequestSender.postProduct(createProductPayload());
-        expect(createRes.status).toBe(httpStatusCodes.CREATED);
+        const { status } = await productRequestSender.postProduct(createProductPayload());
+
+        expect(status).toBe(httpStatusCodes.CREATED);
+      });
+    });
+  });
+
+  describe('DELETE /products/:id', () => {
+    describe('success cases', () => {
+      it('deletes an existing product', async () => {
+        const { status } = await productRequestSender.postProduct(createProductPayload());
+        expect(status).toBe(httpStatusCodes.CREATED);
+        const { body } = await productRequestSender.postProduct(createProductPayload());
+        expect(body).toBeDefined();
+
+        expect(typeof body.id).toBe('string');
+
+        const { status: deleteStatus } = await productRequestSender.deleteProduct(body);
+        expect(deleteStatus).toBe(httpStatusCodes.NO_CONTENT);
       });
     });
 
@@ -111,35 +109,23 @@ describe('product', function () {
           description: 'High resolution raster imagery',
         };
 
-        const createRes = await productRequestSender.postProduct(badPayload);
+        const createRes = await productRequestSender.postProduct(badPayload as unknown as ProductCreate);
 
         expect(createRes.status).toBe(httpStatusCodes.BAD_REQUEST);
-      });
-    });
-  });
-  describe('DELETE /products/:id', () => {
-    describe('success cases', () => {
-      it('deletes an existing product', async () => {
-        const createRes = await productRequestSender.postProduct(createProductPayload());
-        expect(createRes.status).toBe(httpStatusCodes.CREATED);
-        const productId = createRes.body as ProductId;
-
-        const deleteRes = await productRequestSender.deleteProduct(productId);
-        expect(deleteRes.status).toBe(httpStatusCodes.NO_CONTENT);
       });
     });
 
     describe('error cases', () => {
       it('returns 404 when product does not exist', async () => {
         const nonExistentId: ProductId = { id: '00000000-0000-0000-0000-000000000000' };
-        const deleteRes = await productRequestSender.deleteProduct(nonExistentId);
-        expect(deleteRes.status).toBe(httpStatusCodes.NOT_FOUND);
+        const { status } = await productRequestSender.deleteProduct(nonExistentId);
+        expect(status).toBe(httpStatusCodes.NOT_FOUND);
       });
 
       it('returns 400 for invalid product ID format', async () => {
         const invalidId: ProductId = { id: 'invalid-id-format' };
-        const deleteRes = await productRequestSender.deleteProduct(invalidId);
-        expect(deleteRes.status).toBe(httpStatusCodes.BAD_REQUEST);
+        const { status } = await productRequestSender.deleteProduct(invalidId);
+        expect(status).toBe(httpStatusCodes.BAD_REQUEST);
       });
     });
   });
@@ -158,13 +144,11 @@ describe('product', function () {
           })
         );
 
-        const res = await productRequestSender.searchProducts({
+        const { status, body } = await productRequestSender.searchProducts({
           name: 'Searchable Raster Layer',
         });
 
-        const body = res.body as Product[];
-
-        expect(res.status).toBe(httpStatusCodes.OK);
+        expect(status).toBe(httpStatusCodes.OK);
         expect(body).toHaveLength(1);
         expect(body[0]).toMatchObject({
           name: 'Searchable Raster Layer',
@@ -174,12 +158,12 @@ describe('product', function () {
       });
 
       it('returns empty list when no products match search', async () => {
-        const res = await productRequestSender.searchProducts({
+        const { status, body } = await productRequestSender.searchProducts({
           name: 'NON_EXISTING_PRODUCT',
         });
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        expect(res.body).toHaveLength(0);
+        expect(status).toBe(httpStatusCodes.OK);
+        expect(body).toHaveLength(0);
       });
 
       it('supports numeric filters (ComparableNumber)', async () => {
@@ -191,17 +175,18 @@ describe('product', function () {
           })
         );
 
-        const res = await productRequestSender.searchProducts({
+        const {
+          status,
+          body: { length },
+        } = await productRequestSender.searchProducts({
           resolutionBest: {
             lessEqual: 1,
             greater: 0.1,
           },
         });
 
-        const body = res.body as Product[];
-
-        expect(res.status).toBe(httpStatusCodes.OK);
-        expect(body.length).toBeGreaterThan(0);
+        expect(status).toBe(httpStatusCodes.OK);
+        expect(length).toBeGreaterThan(0);
       });
 
       it('returns empty list when numeric filter excludes all results', async () => {
@@ -226,18 +211,18 @@ describe('product', function () {
           })
         );
 
-        const res = await productRequestSender.searchProducts({
+        const { status, body } = await productRequestSender.searchProducts({
           type: 'raster',
           protocol: 'WMTS',
           minZoom: { lessEqual: 10 },
         });
 
-        expect(res.status).toBe(httpStatusCodes.OK);
+        expect(status).toBe(httpStatusCodes.OK);
 
-        (res.body as Product[]).forEach((product: Product) => {
-          expect(product.type).toBe('raster');
-          expect(product.protocol).toBe('WMTS');
-          expect(product.minZoom).toBeLessThanOrEqual(10);
+        body.forEach(({ type, protocol, minZoom }) => {
+          expect(type).toBe('raster');
+          expect(protocol).toBe('WMTS');
+          expect(minZoom).toBeLessThanOrEqual(10);
         });
       });
 
@@ -251,25 +236,22 @@ describe('product', function () {
 
         // Search with a polygon that intersects with the seeded product
         // The seeded product has coordinates: [30, 10], [40, 40], [20, 40], [10, 20], [30, 10]
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            intersects: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [25, 15],
-                  [35, 15],
-                  [35, 35],
-                  [25, 35],
-                  [25, 15],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [25, 15],
+                [35, 15],
+                [35, 35],
+                [25, 35],
+                [25, 15],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'intersects'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
+        expect(status).toBe(httpStatusCodes.OK);
         expect(body.length).toBeGreaterThan(0);
 
         // Verify the returned product has the expected bounding polygon
@@ -280,25 +262,23 @@ describe('product', function () {
 
       it('returns empty list when search polygon does not intersect any products', async () => {
         // Search with a polygon that does not intersect with any products
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            intersects: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [100, 100],
-                  [110, 100],
-                  [110, 110],
-                  [100, 110],
-                  [100, 100],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [100, 100],
+                [110, 100],
+                [110, 110],
+                [100, 110],
+                [100, 100],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'intersects'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        expect(res.body).toHaveLength(0);
+        expect(status).toBe(httpStatusCodes.OK);
+        expect(body).toHaveLength(0);
       });
 
       it('returns products that contain the search polygon', async () => {
@@ -309,25 +289,22 @@ describe('product', function () {
           })
         );
 
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            contains: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [22, 22],
-                  [28, 22],
-                  [28, 28],
-                  [22, 28],
-                  [22, 22],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [22, 22],
+                [28, 22],
+                [28, 28],
+                [22, 28],
+                [22, 22],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'contains'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
+        expect(status).toBe(httpStatusCodes.OK);
 
         expect(body.length).toBeGreaterThan(0);
 
@@ -337,25 +314,23 @@ describe('product', function () {
       });
 
       it('returns empty list when no product contains the search polygon', async () => {
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            contains: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [0, 0],
-                  [100, 0],
-                  [100, 100],
-                  [0, 100],
-                  [0, 0],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [0, 0],
+                [100, 0],
+                [100, 100],
+                [0, 100],
+                [0, 0],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'contains'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        expect(res.body).toHaveLength(0);
+        expect(status).toBe(httpStatusCodes.OK);
+        expect(body).toHaveLength(0);
       });
 
       it('returns products that are within the search polygon', async () => {
@@ -366,25 +341,22 @@ describe('product', function () {
           })
         );
 
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            within: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [0, 0],
-                  [50, 0],
-                  [50, 50],
-                  [0, 50],
-                  [0, 0],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [0, 0],
+                [50, 0],
+                [50, 50],
+                [0, 50],
+                [0, 0],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'within'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        const body = res.body as Product[];
+        expect(status).toBe(httpStatusCodes.OK);
         expect(body.length).toBeGreaterThan(0);
 
         const product = body[0];
@@ -393,25 +365,23 @@ describe('product', function () {
       });
 
       it('returns empty list when no product is within the search polygon', async () => {
-        const res = await productRequestSender.searchProducts({
-          boundingPolygon: {
-            within: {
-              type: 'Polygon',
-              coordinates: [
-                [
-                  [100, 100],
-                  [101, 100],
-                  [101, 101],
-                  [100, 101],
-                  [100, 100],
-                ],
+        const { status, body } = await productRequestSender.searchProducts(
+          createBoundingPolygonSearchParameter(
+            [
+              [
+                [100, 100],
+                [101, 100],
+                [101, 101],
+                [100, 101],
+                [100, 100],
               ],
-            } as IPolygon,
-          },
-        });
+            ],
+            'within'
+          )
+        );
 
-        expect(res.status).toBe(httpStatusCodes.OK);
-        expect(res.body).toHaveLength(0);
+        expect(status).toBe(httpStatusCodes.OK);
+        expect(body).toHaveLength(0);
       });
     });
 
@@ -423,14 +393,14 @@ describe('product', function () {
           const createRes = await productRequestSender.postProduct(payload);
           expect(createRes.status).toBe(httpStatusCodes.CREATED);
 
-          const productId = createRes.body as ProductId;
+          const productId = createRes.body;
 
           // Update the product
-          const updatePayload = createProductPayload({
+          const updatePayload = {
             name: 'Updated Product',
             description: 'Updated description',
             resolutionBest: 0.5,
-          });
+          };
 
           const patchRes = await productRequestSender.patchProduct(productId, updatePayload);
           expect(patchRes.status).toBe(httpStatusCodes.NO_CONTENT);
@@ -441,10 +411,9 @@ describe('product', function () {
           });
 
           expect(searchRes.status).toBe(httpStatusCodes.OK);
-          const res = searchRes.body as Product[];
-          expect(res.length).toBeGreaterThan(0);
+          expect(searchRes.body.length).toBeGreaterThan(0);
 
-          const updatedProduct = res[0];
+          const updatedProduct = searchRes.body[0];
           expect(updatedProduct.name).toBe('Updated Product');
           expect(updatedProduct.description).toBe('Updated description');
           expect(updatedProduct.resolutionBest).toBe(0.5);
@@ -456,26 +425,24 @@ describe('product', function () {
           const createRes = await productRequestSender.postProduct(payload);
           expect(createRes.status).toBe(httpStatusCodes.CREATED);
 
-          const productId = createRes.body as ProductId;
+          const productId = createRes.body;
           const originalDescription = payload.description;
 
           // Partially update only the name
-          const patchRes = await productRequestSender.patchProduct(productId, {
+          const { status } = await productRequestSender.patchProduct(productId, {
             name: 'Partially Updated Product',
           });
 
-          expect(patchRes.status).toBe(httpStatusCodes.NO_CONTENT);
-
+          expect(status).toBe(httpStatusCodes.NO_CONTENT);
           // Search for the updated product to verify changes
-          const searchRes = await productRequestSender.searchProducts({
+          const { status: searchStatus, body: searchBody } = await productRequestSender.searchProducts({
             name: 'Partially Updated Product',
           });
 
-          expect(searchRes.status).toBe(httpStatusCodes.OK);
-          const res = searchRes.body as Product[];
-          expect(res.length).toBeGreaterThan(0);
+          expect(searchStatus).toBe(httpStatusCodes.OK);
+          expect(searchBody.length).toBeGreaterThan(0);
 
-          const updatedProduct = res[0];
+          const updatedProduct = searchBody[0];
           expect(updatedProduct.name).toBe('Partially Updated Product');
           // Description should remain unchanged
           expect(updatedProduct.description).toBe(originalDescription);
@@ -487,16 +454,16 @@ describe('product', function () {
           const nonExistentId: ProductId = { id: '00000000-0000-0000-0000-000000000000' };
           const updatePayload = { name: 'Updated Name' };
 
-          const patchRes = await productRequestSender.patchProduct(nonExistentId, updatePayload);
-          expect(patchRes.status).toBe(httpStatusCodes.NOT_FOUND);
+          const { status } = await productRequestSender.patchProduct(nonExistentId, updatePayload);
+          expect(status).toBe(httpStatusCodes.NOT_FOUND);
         });
 
         it('returns 400 for invalid product ID format', async () => {
           const invalidId: ProductId = { id: 'invalid-format-id' };
           const updatePayload = { name: 'Updated Name' };
 
-          const patchRes = await productRequestSender.patchProduct(invalidId, updatePayload);
-          expect(patchRes.status).toBe(httpStatusCodes.BAD_REQUEST);
+          const { status } = await productRequestSender.patchProduct(invalidId, updatePayload);
+          expect(status).toBe(httpStatusCodes.BAD_REQUEST);
         });
       });
     });

@@ -6,14 +6,14 @@ import jsLogger, { Logger } from '@map-colonies/js-logger';
 import { CleanupRegistry } from '@map-colonies/cleanup-registry';
 import { DataSource, Repository } from 'typeorm';
 import { instancePerContainerCachingFactory } from 'tsyringe';
-import { addTransactionalDataSource, initializeTransactionalContext, StorageDriver } from 'typeorm-transactional';
 import { InjectionObject, registerDependencies } from '@common/dependencyRegistration';
-import { ON_SIGNAL, SERVICES, SERVICE_NAME } from '@common/constants';
+import { HEALTHCHECK, ON_SIGNAL, SERVICES, SERVICE_NAME } from '@common/constants';
 import { getTracing } from '@common/tracing';
 import { productRouterFactory, PRODUCT_ROUTER_SYMBOL } from './product/routes/productRouter';
-import { ConfigType, getConfig } from './common/config';
+import { type ConfigType, getConfig } from './common/config';
 import { Product, PRODUCT_REPOSITORY_SYMBOL } from './product/models/product';
-import { DATA_SOURCE_PROVIDER, dataSourceFactory } from './common/db/connection';
+import { DATA_SOURCE_PROVIDER, dataSourceFactory, getDbHealthCheckFunction } from './common/db/connection';
+import { HealthCheck } from '@godaddy/terminus';
 
 export interface RegisterOptions {
   override?: InjectionObject<unknown>[];
@@ -59,14 +59,7 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     { token: SERVICES.TRACER, provider: { useValue: tracer } },
     { token: SERVICES.METRICS, provider: { useValue: metricsRegistry } },
     { token: PRODUCT_ROUTER_SYMBOL, provider: { useFactory: productRouterFactory } },
-    {
-      token: 'onSignal',
-      provider: {
-        useValue: async (): Promise<void> => {
-          await getTracing().stop();
-        },
-      },
-    },
+
     {
       token: PRODUCT_REPOSITORY_SYMBOL,
       provider: {
@@ -81,19 +74,14 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       provider: {
         useFactory: instancePerContainerCachingFactory(dataSourceFactory),
       },
-      postInjectionHook: async (deps: DependencyContainer): Promise<void> => {
+      postInjectionHook: (deps: DependencyContainer): void => {
         const dataSource = deps.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-        if (!dataSource.isInitialized) {
-          await dataSource.initialize();
-
-          // Only use transactional in non-test environments
-          if (process.env.NODE_ENV !== 'test') {
-            initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
-            addTransactionalDataSource(dataSource);
-          }
-
-          cleanupRegistry.register({ id: DATA_SOURCE_PROVIDER, func: dataSource.destroy.bind(dataSource) });
-        }
+        cleanupRegistry.register({
+          id: DATA_SOURCE_PROVIDER,
+          func: async () => {
+            if (dataSource.isInitialized) return dataSource.destroy.bind(dataSource);
+          },
+        });
       },
     },
     {
@@ -111,7 +99,19 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
     {
       token: ON_SIGNAL,
       provider: {
-        useValue: cleanupRegistry.trigger.bind(cleanupRegistry),
+        useValue: async (): Promise<void> => {
+          await getTracing().stop();
+          await cleanupRegistry.trigger();
+        },
+      },
+    },
+    {
+      token: HEALTHCHECK,
+      provider: {
+        useFactory: (depContainer): HealthCheck => {
+          const dataSource = depContainer.resolve<DataSource>(DATA_SOURCE_PROVIDER);
+          return getDbHealthCheckFunction(dataSource);
+        },
       },
     },
   ];

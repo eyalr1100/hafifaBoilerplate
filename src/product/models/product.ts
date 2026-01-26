@@ -1,10 +1,11 @@
 import { Entity as OrmEntity, Index, Column, PrimaryGeneratedColumn } from 'typeorm';
-import { consumptionProtocol, IPolygon, IProductModel, IProductType, IProtocolType, productType } from './interface';
+import { type Polygon } from 'geojson';
+import { type ConsumptionProtocol, consumptionProtocol, type ProductModel, type ProductType, productType } from './interface';
 
 export const PRODUCT_REPOSITORY_SYMBOL = Symbol('ProductRepository');
 
 @OrmEntity()
-export class Product implements IProductModel {
+export class Product implements ProductModel {
   @PrimaryGeneratedColumn('uuid')
   public id!: string;
 
@@ -16,7 +17,7 @@ export class Product implements IProductModel {
 
   @Index('idx_products_bounding_polygon', { spatial: true })
   @Column({ type: 'geometry', spatialFeatureType: 'Polygon', srid: 4326 })
-  public boundingPolygon!: IPolygon;
+  public boundingPolygon!: Polygon;
 
   @Column({ name: 'consumtion_link' })
   public consumtionLink!: string;
@@ -27,7 +28,7 @@ export class Product implements IProductModel {
     enum: Object.values(productType),
     enumName: 'product_type',
   })
-  public type!: IProductType;
+  public type!: ProductType;
 
   @Index('idx_products_protocol')
   @Column({
@@ -35,7 +36,7 @@ export class Product implements IProductModel {
     enum: Object.values(consumptionProtocol),
     enumName: 'consumption_protocol',
   })
-  public protocol!: IProtocolType;
+  public protocol!: ConsumptionProtocol;
 
   @Column({ name: 'resolution_best', type: 'float' })
   public resolutionBest!: number;

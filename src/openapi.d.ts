@@ -11,24 +11,7 @@ export type paths = {
     get?: never;
     put?: never;
     /** Creates a new product */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': components['schemas']['productCreate'];
-        };
-      };
-      responses: {
-        201: components['responses']['CreatedProduct'];
-        400: components['responses']['BadRequest'];
-        503: components['responses']['ServiceUnavailable'];
-      };
-    };
+    post: operations['createProduct'];
     delete?: never;
     options?: never;
     head?: never;
@@ -45,24 +28,7 @@ export type paths = {
     get?: never;
     put?: never;
     /** Searches for products */
-    post: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path?: never;
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': components['schemas']['searchParameter'];
-        };
-      };
-      responses: {
-        200: components['responses']['SearchProductsOK'];
-        400: components['responses']['BadRequest'];
-        503: components['responses']['ServiceUnavailable'];
-      };
-    };
+    post: operations['searchProducts'];
     delete?: never;
     options?: never;
     head?: never;
@@ -81,48 +47,10 @@ export type paths = {
     };
     get?: never;
     /** Partially updates a product by ID */
-    put: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description Product ID */
-          id: components['schemas']['uuid'];
-        };
-        cookie?: never;
-      };
-      requestBody?: {
-        content: {
-          'application/json': components['schemas']['productBase'];
-        };
-      };
-      responses: {
-        204: components['responses']['NoContent'];
-        400: components['responses']['BadRequest'];
-        404: components['responses']['ProductNotFound'];
-        503: components['responses']['ServiceUnavailable'];
-      };
-    };
+    put: operations['updateProduct'];
     post?: never;
     /** Deletes a product by ID */
-    delete: {
-      parameters: {
-        query?: never;
-        header?: never;
-        path: {
-          /** @description Product ID */
-          id: components['schemas']['uuid'];
-        };
-        cookie?: never;
-      };
-      requestBody?: never;
-      responses: {
-        204: components['responses']['DeletedProduct'];
-        400: components['responses']['BadRequest'];
-        404: components['responses']['ProductNotFound'];
-        503: components['responses']['ServiceUnavailable'];
-      };
-    };
+    delete: operations['deleteProduct'];
     options?: never;
     head?: never;
     patch?: never;
@@ -194,8 +122,6 @@ export type components = {
     });
     /** @description Point in 3D space */
     Point3D: number[];
-    position: number[];
-    linearRing: components['schemas']['position'][];
     boundingPolygon: {
       contains?: components['schemas']['Polygon'];
       within?: components['schemas']['Polygon'];
@@ -313,5 +239,82 @@ export type components = {
   pathItems: never;
 };
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+  createProduct: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['productCreate'];
+      };
+    };
+    responses: {
+      201: components['responses']['CreatedProduct'];
+      400: components['responses']['BadRequest'];
+      503: components['responses']['ServiceUnavailable'];
+    };
+  };
+  searchProducts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['searchParameter'];
+      };
+    };
+    responses: {
+      200: components['responses']['SearchProductsOK'];
+      400: components['responses']['BadRequest'];
+      503: components['responses']['ServiceUnavailable'];
+    };
+  };
+  updateProduct: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Product ID */
+        id: components['schemas']['uuid'];
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['productBase'];
+      };
+    };
+    responses: {
+      204: components['responses']['NoContent'];
+      400: components['responses']['BadRequest'];
+      404: components['responses']['ProductNotFound'];
+      503: components['responses']['ServiceUnavailable'];
+    };
+  };
+  deleteProduct: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Product ID */
+        id: components['schemas']['uuid'];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: components['responses']['DeletedProduct'];
+      400: components['responses']['BadRequest'];
+      404: components['responses']['ProductNotFound'];
+      503: components['responses']['ServiceUnavailable'];
+    };
+  };
+}
 export type TypedRequestHandlers = ImportedTypedRequestHandlers<paths, operations>;

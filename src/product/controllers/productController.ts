@@ -5,12 +5,12 @@ import { type Registry, Counter } from 'prom-client';
 import { RequestHandler } from 'express';
 import { SERVICES } from '@common/constants';
 import { ProductManager } from '../models/productManager';
-import { IProductCreate, IProductUpdate, ISearchParameter } from '../models/interface';
+import type { ProductUpdate, ProductCreate, ProductId, SearchParameter } from '../models/interface';
 import { Product } from '../models/product';
 
-type SearchProductHandler = RequestHandler<undefined, Product[] | string, ISearchParameter>;
-type PostEntityHandler = RequestHandler<undefined, ProductId, IProductCreate>;
-type PutEntityHandler = RequestHandler<ProductId, undefined, IProductUpdate>;
+type SearchProductHandler = RequestHandler<undefined, Product[] | string, SearchParameter>;
+type PostEntityHandler = RequestHandler<undefined, ProductId | string, ProductCreate>;
+type PutEntityHandler = RequestHandler<ProductId, undefined, ProductUpdate>;
 type DeleteProduct = RequestHandler<ProductId, undefined, undefined>;
 
 @injectable()
@@ -29,10 +29,14 @@ export class ProductController {
     });
   }
 
-  public createProduct: PostEntityHandler = async (req, res) => {
-    const id = await this.manager.createProduct(req.body);
-    this.createdResourceCounter.inc();
-    return res.status(httpStatus.CREATED).json({ id });
+  public createProduct: PostEntityHandler = async (req, res, next) => {
+    try {
+      const id = await this.manager.createProduct(req.body);
+      this.createdResourceCounter.inc();
+      return res.status(httpStatus.CREATED).json({ id });
+    } catch (error) {
+      next(error);
+    }
   };
 
   public updateProduct: PutEntityHandler = async (req, res, next) => {
@@ -44,9 +48,13 @@ export class ProductController {
     }
   };
 
-  public searchProduct: SearchProductHandler = async (req, res) => {
-    const results = await this.manager.searchProduct(req.body);
-    return res.status(httpStatus.OK).json(results);
+  public searchProduct: SearchProductHandler = async (req, res, next) => {
+    try {
+      const results = await this.manager.searchProduct(req.body);
+      return res.status(httpStatus.OK).json(results);
+    } catch (error) {
+      next(error);
+    }
   };
 
   public deleteProduct: DeleteProduct = async (req, res, next) => {
@@ -57,8 +65,4 @@ export class ProductController {
       return next(error);
     }
   };
-}
-
-export interface ProductId {
-  id: string;
 }

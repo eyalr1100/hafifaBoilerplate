@@ -49,7 +49,7 @@
       "__name": "DB_PORT",
       "__format": "number"
     },
-    "username": "DB_USERNAME",
+    "username": "DB_USER",
     "password": "DB_PASSWORD",
     "enableSslAuth": {
       "__name": "DB_ENABLE_SSL_AUTH",
