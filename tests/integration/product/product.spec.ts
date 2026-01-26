@@ -11,36 +11,13 @@ import { ProductCreate, ProductId } from '@src/product/models/interface';
 import { Product } from '@src/product/models/product';
 import { DATA_SOURCE_PROVIDER } from '@src/common/db/connection';
 import { ProductRequestSender } from './helpers/requestSender';
+import { createProductPayload } from './utils';
 
 describe('product', function () {
   let productRequestSender: ProductRequestSender;
   let app: Application;
   let container: DependencyContainer;
   let configInstance: ConfigType;
-
-  const createProductPayload = (overrides?: Partial<ProductCreate>): ProductCreate => ({
-    name: 'Satellite Imagery Layer',
-    description: 'High resolution raster imagery',
-    boundingPolygon: {
-      type: 'Polygon',
-      coordinates: [
-        [
-          [30, 10],
-          [40, 40],
-          [20, 40],
-          [10, 20],
-          [30, 10],
-        ],
-      ],
-    },
-    consumtionLink: 'https://example.com/wmts',
-    type: 'raster',
-    protocol: 'WMTS',
-    resolutionBest: 0.25,
-    minZoom: 8,
-    maxZoom: 18,
-    ...overrides,
-  });
 
   beforeAll(async function () {
     await initConfig(true);
