@@ -10,7 +10,9 @@ replicaCount: 1
 initialDelaySeconds: 600
 
 annotations: {}
-podAnnotations: {}
+podAnnotations: 
+  prometheus.io/scrape: 'true'
+  prometheus.io/port: '8080'
 
 cloudProvider:
   dockerRegistryUrl:
