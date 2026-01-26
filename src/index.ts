@@ -5,7 +5,7 @@ import { Logger } from '@map-colonies/js-logger';
 import { DependencyContainer } from 'tsyringe';
 import { DataSource } from 'typeorm';
 import { initializeTransactionalContext, StorageDriver, addTransactionalDataSource } from 'typeorm-transactional';
-import { ON_SIGNAL, SERVICES } from '@common/constants';
+import { HEALTHCHECK, ON_SIGNAL, SERVICES } from '@common/constants';
 import { ConfigType } from '@common/config';
 import { DATA_SOURCE_PROVIDER } from '@common/db/connection';
 import { getApp } from './app';
@@ -18,13 +18,12 @@ void getApp()
     const config = container.resolve<ConfigType>(SERVICES.CONFIG);
     const port = config.get('server.port');
 
-    const stubHealthCheck = async (): Promise<void> => Promise.resolve();
+    depContainer = container;
+
     const server = createTerminus(createServer(app), {
-      healthChecks: { '/liveness': stubHealthCheck },
+      healthChecks: { '/liveness': depContainer.resolve(HEALTHCHECK) },
       onSignal: container.resolve<() => Promise<void>>(ON_SIGNAL),
     });
-
-    depContainer = container;
 
     server.listen(port, () => {
       logger.info(`app started on port ${port}`);
@@ -48,18 +47,12 @@ void getApp()
     });
   })
   .catch(async (error: Error) => {
-    // ESLint rules are giving mutually exclusive advices here!!!
-    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-    if (depContainer !== undefined && depContainer.isRegistered(SERVICES.LOGGER)) {
-      const logger = depContainer.resolve<Logger>(SERVICES.LOGGER);
-      logger.error({ msg: '😢 - failed initializing the server', err: error });
-    } else {
-      console.error('CRITICAL: failed to initialize server - logging system unavailable', error);
-    }
+    console.error('😢 - failed initializing the server');
+    console.error(error);
 
-    // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
-    if (depContainer !== undefined && depContainer.isRegistered(ON_SIGNAL)) {
-      await depContainer.resolve<() => Promise<void>>(ON_SIGNAL)();
+    if (depContainer?.isRegistered(ON_SIGNAL) == true) {
+      const shutDown: () => Promise<void> = depContainer.resolve(ON_SIGNAL);
+      await shutDown();
     }
 
     process.exit(1);
