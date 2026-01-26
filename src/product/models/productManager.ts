@@ -43,24 +43,17 @@ export class ProductManager {
   public async searchProduct(searchParameter: SearchParameter): Promise<Product[]> {
     const qb = this.repository.createQueryBuilder('product');
 
-    for (const [key, value] of Object.entries(searchParameter)) {
+    Object.entries(searchParameter).forEach(([key, value]) => {
       if (isComparableNumber(value)) {
         addNumericFilter(qb, key, value);
-        continue;
-      }
-
-      if (typeof value === 'string') {
+      } else if (typeof value === 'string') {
         addSimpleFilter(qb, key, value);
-        continue;
-      }
-
-      if (key === 'boundingPolygon') {
+      } else if (key === 'boundingPolygon') {
         addSpatialFilter(qb, value);
-        continue;
       }
-    }
+    });
 
-    this.logger.info({ msg: 'SQL query generated', sql: qb.getSql() });
+    this.logger.debug({ msg: 'SQL query generated', sql: qb.getSql() });
 
     return qb.getMany();
   }
