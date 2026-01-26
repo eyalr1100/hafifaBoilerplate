@@ -23,7 +23,6 @@ describe('docs', function () {
   beforeEach(async function () {
     const mockDataSource = {
       isInitialized: false,
-      destroy: jest.fn().mockResolvedValue(undefined),
       getRepository: jest.fn(),
     } as unknown as DataSource;
 
@@ -38,25 +37,6 @@ describe('docs', function () {
     app = initializedApp;
     container = initializedContainer;
     requestSender = new DocsRequestSender(app);
-  });
-
-  afterEach(async function () {
-    // Clean up after each test
-    const dataSource = container.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-    const registry = container.resolve<CleanupRegistry>(SERVICES.CLEANUP_REGISTRY);
-
-    await registry.trigger();
-
-    if (dataSource.isInitialized) {
-      try {
-        await dataSource.destroy();
-      } catch (error) {
-        console.error('Error destroying dataSource:', error);
-      }
-    }
-
-    container.reset();
-    container.clearInstances();
   });
 
   describe('Happy Path', function () {
