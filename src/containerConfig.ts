@@ -75,14 +75,10 @@ export const registerExternalValues = async (options?: RegisterOptions): Promise
       },
       postInjectionHook: (deps: DependencyContainer): void => {
         const dataSource = deps.resolve<DataSource>(DATA_SOURCE_PROVIDER);
-
-        // Just register cleanup - don't force initialization
         cleanupRegistry.register({
           id: DATA_SOURCE_PROVIDER,
           func: async () => {
-            if (dataSource.isInitialized) {
-              await dataSource.destroy();
-            }
+            if (dataSource.isInitialized) return dataSource.destroy.bind(dataSource);
           },
         });
       },
