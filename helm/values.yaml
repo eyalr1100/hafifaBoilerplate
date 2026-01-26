@@ -65,7 +65,7 @@ extraEnvVars:
   - name: DB_PORT
     value: "5432"
   - name: DB_NAME
-    value: "products"
+    value: "hafifaProduct"
 
 postgresql:
   user: mydbuser

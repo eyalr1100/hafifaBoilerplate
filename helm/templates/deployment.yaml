@@ -17,7 +17,6 @@ metadata:
     {{- include "eyal-hafifa-server.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
-  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
       app: {{ $chartName }}
@@ -36,10 +35,11 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-    {{- if $cloudProviderImagePullSecretName }}
+      {{ if $cloudProviderImagePullSecretName }}
       imagePullSecrets:
         - name: {{ $cloudProviderImagePullSecretName | quote }}
-    {{- end }}
+      {{ end }}
+
       containers:
         - name: {{ $releaseName }}-{{ $chartName }}-deployment
           {{- with .Values.image }}
@@ -66,6 +66,16 @@ spec:
           env:
             - name: SERVER_PORT
               value: {{ .Values.env.targetPort | quote }}
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret-hafifa-server  # <-- must match secret metadata.name
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql-secret-hafifa-server
+                  key: POSTGRES_PASSWORD
             {{- if .Values.caSecretName }}
             - name: REQUESTS_CA_BUNDLE
               value: {{ printf "%s/%s" .Values.caPath .Values.caKey | quote }}
@@ -73,29 +83,11 @@ spec:
               value: {{ printf "[%s/%s]" .Values.caPath .Values.caKey | quote }}
             {{- end }}
             {{- if .Values.extraEnvVars }}
-            {{- range .Values.extraEnvVars }}
-              - name: {{ .name }}
-                value: {{ .value | quote }}
-            {{- end }}
-              - name: DB_USER
-                valueFrom:
-                  secretKeyRef:
-                    name: postgresql-secret
-                    key: POSTGRES_USER
-              - name: DB_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: postgresql-secret
-                    key: POSTGRES_PASSWORD
-              - name: DB_NAME
-                valueFrom:
-                  secretKeyRef:
-                    name: postgresql-secret
-                    key: POSTGRES_DB
+            {{- toYaml .Values.extraEnvVars | nindent 12 }}
             {{- end }}            
           envFrom:
             - configMapRef:
-                name: {{ printf "%s-configmap" (include "eyal-hafifa-server.fullname" .) }}
+                name: {{ $releaseName }}-{{ $chartName }}-configmap
           ports:
             - name: http
               containerPort: {{ .Values.env.targetPort }}
