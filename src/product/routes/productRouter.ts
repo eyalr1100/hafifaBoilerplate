@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import { container, FactoryFunction } from 'tsyringe';
-import { DbCheckMiddleware } from '@src/common/middleware/dbCheck';
 import { ProductController } from '../controllers/productController';
 
 const productRouterFactory: FactoryFunction<Router> = (dependencyContainer) => {
   const router = Router();
   const controller = dependencyContainer.resolve(ProductController);
-  const dbCheck = container.resolve(DbCheckMiddleware);
-
-  router.use(dbCheck.getMiddleware());
 
   router.post('/', controller.createProduct);
   router.post('/search', controller.searchProduct);
